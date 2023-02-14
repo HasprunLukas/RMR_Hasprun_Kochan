@@ -31,6 +31,15 @@ namespace Ui {
 class MainWindow;
 }
 
+typedef struct
+{
+
+    unsigned short x;
+    unsigned short y;
+    unsigned short fi;
+
+}PositionData;
+
 ///toto je trieda s oknom.. ktora sa spusti ked sa spusti aplikacia.. su tu vsetky gombiky a spustania...
 class MainWindow : public QMainWindow
 {

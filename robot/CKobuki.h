@@ -81,8 +81,8 @@ typedef struct
 	bool WheelDropLeft;  
 	bool WheelDropRight; 
 	//tocenie kolies
-	unsigned short EncoderRight;
-	unsigned short EncoderLeft;
+    unsigned short EncoderRight; //pohyb praveho kolesa
+    unsigned short EncoderLeft;  //pohyb laveho kolesa
 	unsigned char PWMright;
 	unsigned char PWMleft;
 	//gombiky
@@ -96,7 +96,7 @@ typedef struct
 	unsigned char IRSensorCenter;
 	unsigned char IRSensorLeft;
 	//---Inertial Sensor Data
-	signed short GyroAngle;
+    signed short GyroAngle;  //vypocet uhla alpha * 100.0
 	unsigned short GyroAngleRate;
 	//---Cliff Sensor Data
 	unsigned short CliffSensorRight;

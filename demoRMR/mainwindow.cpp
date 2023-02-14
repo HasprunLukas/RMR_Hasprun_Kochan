@@ -10,11 +10,14 @@
 /// AZ POTOM ZACNI ROBIT... AK TO NESPRAVIS, POJDU BODY DOLE... A NIE JEDEN,ALEBO DVA ALE BUDES RAD
 /// AK SA DOSTANES NA SKUSKU
 
-
+PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    positionDataStruct.x = 0;
+    positionDataStruct.y = 0;
+    positionDataStruct.fi = 15;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
     ipaddress="192.168.1.13";
@@ -96,12 +99,14 @@ void  MainWindow::setUiValues(double robotX,double robotY,double robotFi)
 int MainWindow::processThisRobot(TKobukiData robotdata)
 {
 
-
     ///tu mozete robit s datami z robota
     /// ale nic vypoctovo narocne - to iste vlakno ktore cita data z robota
     ///teraz tu posielam rychlosti na zaklade toho co setne joystick a vypisujeme data z robota(kazdy 5ty krat. ale mozete skusit aj castejsie). vyratajte si polohu. a vypiste spravnu
     /// tuto joystick cast mozete vklude vymazat,alebo znasilnit na vas regulator alebo ake mate pohnutky
 
+    positionDataStruct.x = robotdata.EncoderLeft;
+    positionDataStruct.y = robotdata.EncoderRight;
+    positionDataStruct.fi = robotdata.GyroAngle * 100.0;
 
 //    if(forwardspeed==0 && rotationspeed!=0)
 //        robot.setRotationSpeed(rotationspeed);
@@ -125,7 +130,8 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
                 /// okno pocuva vo svojom slote a vasu premennu nastavi tak ako chcete. prikaz emit to presne takto spravi
                 /// viac o signal slotoch tu: https://doc.qt.io/qt-5/signalsandslots.html
         ///posielame sem nezmysli.. pohrajte sa nech sem idu zmysluplne veci
-        emit uiValuesChanged(robotdata.EncoderLeft,11,12);
+//        emit uiValuesChanged(robotdata.EncoderLeft,11,15);
+        emit uiValuesChanged(positionDataStruct.x,positionDataStruct.y,positionDataStruct.fi);
         ///toto neodporucam na nejake komplikovane struktury.signal slot robi kopiu dat. radsej vtedy posielajte
         /// prazdny signal a slot bude vykreslovat strukturu (vtedy ju musite mat samozrejme ako member premmennu v mainwindow.ak u niekoho najdem globalnu premennu,tak bude cistit bludisko zubnou kefkou.. kefku dodam)
         /// vtedy ale odporucam pouzit mutex, aby sa vam nestalo ze budete pocas vypisovania prepisovat niekde inde
