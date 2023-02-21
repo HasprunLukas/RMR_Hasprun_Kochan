@@ -10,6 +10,8 @@
 /// AZ POTOM ZACNI ROBIT... AK TO NESPRAVIS, POJDU BODY DOLE... A NIE JEDEN,ALEBO DVA ALE BUDES RAD
 /// AK SA DOSTANES NA SKUSKU
 
+double getTickToMeter(unsigned short previousTick, unsigned short tick);
+
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -17,7 +19,10 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     positionDataStruct.x = 0;
     positionDataStruct.y = 0;
-    positionDataStruct.fi = 15;
+    positionDataStruct.fi = 0;
+
+    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
+    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
     ipaddress="192.168.1.13";
@@ -104,9 +109,21 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     ///teraz tu posielam rychlosti na zaklade toho co setne joystick a vypisujeme data z robota(kazdy 5ty krat. ale mozete skusit aj castejsie). vyratajte si polohu. a vypiste spravnu
     /// tuto joystick cast mozete vklude vymazat,alebo znasilnit na vas regulator alebo ake mate pohnutky
 
-    positionDataStruct.x = robotdata.EncoderLeft;
-    positionDataStruct.y = robotdata.EncoderRight;
-    positionDataStruct.fi = robotdata.GyroAngle * 100.0;
+    long double d = 0.23; // vzdialenost medzi kolesami v metroch
+    double lengthRight = getTickToMeter(positionDataStruct.previousEncoderRight, robotdata.EncoderRight);
+    double lengthLeft = getTickToMeter(positionDataStruct.previousEncoderLeft, robotdata.EncoderLeft);
+    if(lengthRight == lengthLeft) {
+        positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi);
+        positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi);
+        positionDataStruct.fi += (lengthRight - lengthLeft) / d;
+    } else {
+        double previousFi = positionDataStruct.fi;
+        positionDataStruct.fi += (lengthRight - lengthLeft) / d;
+        positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi)-sin(previousFi));
+        positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi)-cos(previousFi));
+    }
+    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
+    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
 //    if(forwardspeed==0 && rotationspeed!=0)
 //        robot.setRotationSpeed(rotationspeed);
@@ -141,6 +158,12 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 
     return 0;
 
+}
+
+double getTickToMeter(unsigned short previousTick, unsigned short tick) {
+    double tickToMeter = 0.000085292090497737556558;
+
+    return tickToMeter * ((double)tick - (double)previousTick);
 }
 
 ///toto je calback na data z lidaru, ktory ste podhodili robotu vo funkcii on_pushButton_9_clicked

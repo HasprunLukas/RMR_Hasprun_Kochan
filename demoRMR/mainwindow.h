@@ -33,10 +33,12 @@ class MainWindow;
 
 typedef struct
 {
-
-    unsigned short x;
-    unsigned short y;
-    unsigned short fi;
+    unsigned short l;
+    unsigned short previousEncoderRight;
+    unsigned short previousEncoderLeft;
+    double x;
+    double y;
+    double fi;
 
 }PositionData;
 
