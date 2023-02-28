@@ -11,6 +11,8 @@
 /// AK SA DOSTANES NA SKUSKU
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
+double xZelana = 10.0;
+double yZelana = 10.0;
 
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
@@ -20,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent) :
     positionDataStruct.x = 0;
     positionDataStruct.y = 0;
     positionDataStruct.fi = 0;
+    positionDataStruct.fi_radian = 0;
 
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
@@ -113,17 +116,27 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     double lengthRight = getTickToMeter(positionDataStruct.previousEncoderRight, robotdata.EncoderRight);
     double lengthLeft = getTickToMeter(positionDataStruct.previousEncoderLeft, robotdata.EncoderLeft);
     if(lengthRight == lengthLeft) {
-        positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi);
-        positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi);
-        positionDataStruct.fi += (lengthRight - lengthLeft) / d;
+        positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
+        positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
+        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
     } else {
-        double previousFi = positionDataStruct.fi;
-        positionDataStruct.fi += (lengthRight - lengthLeft) / d;
-        positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi)-sin(previousFi));
-        positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi)-cos(previousFi));
+        double previousFi = positionDataStruct.fi_radian;
+        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+        positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
+        positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+
+// TODO DOROBIT
+//    if(abs((xZelana - positionDataStruct.x)) <= 0.1)
+//    if(xZelana < positionDataStruct.x) {
+//        robot.setTranslationSpeed(500);
+//    } else if(xZelana > positionDataStruct.x){
+//        robot.setTranslationSpeed(500);
+//    }
 
 //    if(forwardspeed==0 && rotationspeed!=0)
 //        robot.setRotationSpeed(rotationspeed);
@@ -133,6 +146,8 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 //        robot.setArcSpeed(forwardspeed,forwardspeed/rotationspeed);
 //    else
 //        robot.setTranslationSpeed(0);
+//    robot.setTranslationSpeed(500);
+
 
 ///TU PISTE KOD... TOTO JE TO MIESTO KED NEVIETE KDE ZACAT,TAK JE TO NAOZAJ TU. AK AJ TAK NEVIETE, SPYTAJTE SA CVICIACEHO MA TU NATO STRING KTORY DA DO HLADANIA XXX
 
@@ -162,8 +177,13 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick) {
     double tickToMeter = 0.000085292090497737556558;
-
-    return tickToMeter * ((double)tick - (double)previousTick);
+    double res = ((double)tick - (double)previousTick);
+    if(res > 5000) {
+        res = (long double)(tick-65536) - (long double)previousTick;
+    } else if(res < -5000) {
+        res = (long double)(tick+65536)- (long double)previousTick;
+    }
+    return tickToMeter * res;
 }
 
 ///toto je calback na data z lidaru, ktory ste podhodili robotu vo funkcii on_pushButton_9_clicked

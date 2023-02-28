@@ -39,6 +39,7 @@ typedef struct
     double x;
     double y;
     double fi;
+    double fi_radian;
 
 }PositionData;
 
