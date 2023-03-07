@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
+#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
 /// AK HO MAS Z GITU A ROBIS NA LABAKOVOM PC, TAK SI HO VLOZ DO FOLDERA KTORY JE JASNE ODLISITELNY OD TVOJICH KOLEGOV
 /// NASLEDNE V POLOZKE Projects SKONTROLUJ CI JE VYPNUTY shadow build...
@@ -11,8 +12,13 @@
 /// AK SA DOSTANES NA SKUSKU
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
-double xZelana = 10.0;
-double yZelana = 10.0;
+double xZelana = -3.0;
+double yZelana = -3.0;
+bool turningLeft = false;
+bool turningRight = false;
+bool isCorrectAngle = false;
+bool isCorrectPosition = false;
+bool startApp = true;
 
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
@@ -24,8 +30,8 @@ MainWindow::MainWindow(QWidget *parent) :
     positionDataStruct.fi = 0;
     positionDataStruct.fi_radian = 0;
 
-    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
-    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+//    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
+//    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
     ipaddress="192.168.1.13";
@@ -106,6 +112,11 @@ void  MainWindow::setUiValues(double robotX,double robotY,double robotFi)
 /// vola sa vzdy ked dojdu nove data z robota. nemusite nic riesit, proste sa to stane
 int MainWindow::processThisRobot(TKobukiData robotdata)
 {
+    if(startApp) {
+        positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
+        positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+        startApp = false;
+    }
 
     ///tu mozete robit s datami z robota
     /// ale nic vypoctovo narocne - to iste vlakno ktore cita data z robota
@@ -119,16 +130,71 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+//        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
     } else {
         double previousFi = positionDataStruct.fi_radian;
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+//        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
         positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+    double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
+    if(wanted_angle < 0) {
+        wanted_angle += 360;
+    }
+    cout<<"Wanted angle: " << wanted_angle<< endl;
+    if(!isCorrectAngle) {
+        if(abs(wanted_angle - positionDataStruct.fi) < 1) {
+            robot.setRotationSpeed(0);
+            isCorrectAngle = true;
+        } else {
+            robot.setRotationSpeed(3.14159/4);
+        }
+    } else {
+        if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
+            isCorrectPosition = true;
+            robot.setTranslationSpeed(0);
+        } else if(abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) < 0.5){
+            robot.setTranslationSpeed(250);
+        } else if((abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) > 0.5 )
+                  || (abs(xZelana - positionDataStruct.x) > 0.5 && abs(yZelana - positionDataStruct.y) < 0.5)){
+            isCorrectAngle = false;
+        } else {
+            robot.setTranslationSpeed(500);
+        }
+    }
+//    cout<<"abs wanted angle: " << abs(wanted_angle - positionDataStruct.fi) << endl;
+//    cout<<"Left: " << turningLeft << endl;
+//    cout<<"Right: " << turningRight << endl;
+//    if(!isCorrectAngle) {
+//        if(abs(wanted_angle - positionDataStruct.fi) < 1) {
+//            robot.setRotationSpeed(0);
+//            turningRight = false;
+//            turningLeft = false;
+//            isCorrectAngle = true;
+//            cout<<"Sme tu: " << wanted_angle<< endl;
+//        } else if(abs(wanted_angle - positionDataStruct.fi) <= 180 && !turningLeft) {
+//            robot.setRotationSpeed(-3.14159/4);
+//            turningRight = true;
+//        } else if(abs(wanted_angle - positionDataStruct.fi) > 180 && !turningRight) {
+//            robot.setRotationSpeed(3.14159/4);
+//            turningLeft = true;
+//        }
+//    } else {
+//        if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
+//            isCorrectPosition = true;
+//            robot.setTranslationSpeed(0);
+//        } else if((abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) > 0.05)
+//                  || (abs(xZelana - positionDataStruct.x) > 0.05 && abs(yZelana - positionDataStruct.y) < 0.05)) {
+//            isCorrectAngle = false;
+//        } else {
+//            robot.setTranslationSpeed(500);
+//        }
+//    }
 
 // TODO DOROBIT
 //    if(abs((xZelana - positionDataStruct.x)) <= 0.1)
