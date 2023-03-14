@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
-#include <tgmath.h>
+//#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
 /// AK HO MAS Z GITU A ROBIS NA LABAKOVOM PC, TAK SI HO VLOZ DO FOLDERA KTORY JE JASNE ODLISITELNY OD TVOJICH KOLEGOV
 /// NASLEDNE V POLOZKE Projects SKONTROLUJ CI JE VYPNUTY shadow build...
@@ -130,13 +130,13 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-//        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
-        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
+        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+//        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
     } else {
         double previousFi = positionDataStruct.fi_radian;
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-//        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
-        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
+        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
+//        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
         positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
@@ -148,7 +148,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     }
     cout<<"Wanted angle: " << wanted_angle<< endl;
     if(!isCorrectAngle) {
-        if(abs(wanted_angle - positionDataStruct.fi) < 1) {
+        if(abs(wanted_angle - positionDataStruct.fi) < 2.5) {
             robot.setRotationSpeed(0);
             isCorrectAngle = true;
         } else {
@@ -158,12 +158,21 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
         if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
             isCorrectPosition = true;
             robot.setTranslationSpeed(0);
-        } else if(abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) < 0.5){
-            robot.setTranslationSpeed(250);
-        } else if((abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) > 0.5 )
-                  || (abs(xZelana - positionDataStruct.x) > 0.5 && abs(yZelana - positionDataStruct.y) < 0.5)){
+            robot.setRotationSpeed(0);
+        } else if((xZelana + yZelana + 0.5) > (positionDataStruct.x + positionDataStruct.y) && (positionDataStruct.x + positionDataStruct.y) > (xZelana + yZelana - 0.5)){
+            if(abs(wanted_angle - positionDataStruct.fi) < 2) {
+                robot.setTranslationSpeed(250);
+            } else {
+                robot.setRotationSpeed(3.14159/4);
+            }
+//        } else if(abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) < 0.5){
+//            robot.setTranslationSpeed(250);
+//        } else if((abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) > 0.5 )
+//                  || (abs(xZelana - positionDataStruct.x) > 0.5 && abs(yZelana - positionDataStruct.y) < 0.5)){
+//            isCorrectAngle = false;
+        } else if(abs(wanted_angle - positionDataStruct.fi) > 2.5){
             isCorrectAngle = false;
-        } else {
+        }else {
             robot.setTranslationSpeed(500);
         }
     }
