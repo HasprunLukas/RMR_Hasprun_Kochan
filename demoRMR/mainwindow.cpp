@@ -152,7 +152,19 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
             robot.setRotationSpeed(0);
             isCorrectAngle = true;
         } else {
-            robot.setRotationSpeed(3.14159/4);
+            if((wanted_angle - positionDataStruct.fi) >= 0.0 && (wanted_angle - positionDataStruct.fi) < 180.0){
+                robot.setRotationSpeed(3.14159/4); //turn left
+            }
+            else if((wanted_angle - positionDataStruct.fi) > 180.0){
+                robot.setRotationSpeed(-3.14159/4); //turn right
+            }
+            else if((wanted_angle - positionDataStruct.fi) < 0.0 && (wanted_angle - positionDataStruct.fi) > -180.0){
+                robot.setRotationSpeed(-3.14159/4); //turn right
+            }
+            else if((wanted_angle - positionDataStruct.fi) < -180.0){
+                robot.setRotationSpeed(3.14159/4); //turn left
+            }
+
         }
     } else {
         if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
