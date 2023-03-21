@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
-//#include <tgmath.h>
+#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
 /// AK HO MAS Z GITU A ROBIS NA LABAKOVOM PC, TAK SI HO VLOZ DO FOLDERA KTORY JE JASNE ODLISITELNY OD TVOJICH KOLEGOV
 /// NASLEDNE V POLOZKE Projects SKONTROLUJ CI JE VYPNUTY shadow build...
@@ -129,14 +129,14 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     if(lengthRight == lengthLeft) {
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
-        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
-//        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
+//        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
     } else {
         double previousFi = positionDataStruct.fi_radian;
-        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi = abs(fmod((positionDataStruct.fi_radian)*(180/PI),360.0));
-//        positionDataStruct.fi = abs(fmod(positionDataStruct.fi_radian, 2*PI)*(180/PI));
+//        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
         positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
@@ -146,94 +146,58 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     if(wanted_angle < 0) {
         wanted_angle += 360;
     }
-    cout<<"Wanted angle: " << wanted_angle<< endl;
+//    cout << "wanted_angle: " << wanted_angle << endl;
     if(!isCorrectAngle) {
-        if(abs(wanted_angle - positionDataStruct.fi) < 2.5) {
+        if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
             robot.setRotationSpeed(0);
             isCorrectAngle = true;
         } else {
-            if((wanted_angle - positionDataStruct.fi) >= 0.0 && (wanted_angle - positionDataStruct.fi) < 180.0){
-                robot.setRotationSpeed(3.14159/4); //turn left
+            double rotation_speed = 3.14159/4;
+            if(abs(wanted_angle - positionDataStruct.fi) <= 30) {
+                rotation_speed = (abs(wanted_angle - positionDataStruct.fi)*(PI/180)) * ((67.5*(PI/180))/(3.14159/4));
             }
-            else if((wanted_angle - positionDataStruct.fi) > 180.0){
-                robot.setRotationSpeed(-3.14159/4); //turn right
-            }
-            else if((wanted_angle - positionDataStruct.fi) < 0.0 && (wanted_angle - positionDataStruct.fi) > -180.0){
-                robot.setRotationSpeed(-3.14159/4); //turn right
-            }
-            else if((wanted_angle - positionDataStruct.fi) < -180.0){
-                robot.setRotationSpeed(3.14159/4); //turn left
+//            cout << "Rotation speed: " << rotation_speed <<" "<<abs(wanted_angle - positionDataStruct.fi)<< endl;
+            if(rotation_speed < 0.2) {
+                rotation_speed = 0.2;
             }
 
+            if((wanted_angle - positionDataStruct.fi) >= 0.0 && (wanted_angle - positionDataStruct.fi) < 180.0){
+                robot.setRotationSpeed(rotation_speed); //turn left
+            }
+            else if((wanted_angle - positionDataStruct.fi) > 180.0){
+                robot.setRotationSpeed(-rotation_speed); //turn right
+            }
+            else if((wanted_angle - positionDataStruct.fi) < 0.0 && (wanted_angle - positionDataStruct.fi) > -180.0){
+                robot.setRotationSpeed(-rotation_speed); //turn right
+            }
+            else if((wanted_angle - positionDataStruct.fi) < -180.0){
+                robot.setRotationSpeed(rotation_speed); //turn left
+            }
         }
     } else {
         if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
             isCorrectPosition = true;
             robot.setTranslationSpeed(0);
-            robot.setRotationSpeed(0);
-        } else if((xZelana + yZelana + 0.5) > (positionDataStruct.x + positionDataStruct.y) && (positionDataStruct.x + positionDataStruct.y) > (xZelana + yZelana - 0.5)){
-            if(abs(wanted_angle - positionDataStruct.fi) < 2) {
-                robot.setTranslationSpeed(250);
+        } else if((xZelana + yZelana + 0.3) > (positionDataStruct.x + positionDataStruct.y) && (positionDataStruct.x + positionDataStruct.y) > (xZelana + yZelana - 0.3)){
+            if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
+                // prerobit na euklidovsku vzdialenost
+
+                double speed = sqrt(pow((xZelana + yZelana), 2)+pow((positionDataStruct.x + positionDataStruct.y), 2)) * 1000; // priklad => 0.3*1000 = 300
+//                double speed = abs((xZelana + yZelana) - (positionDataStruct.x + positionDataStruct.y)) * 1000; // priklad => 0.3*1000 = 300
+                if(speed < 50) {
+                    speed = 50;
+                }
+                robot.setTranslationSpeed(speed);
             } else {
-                robot.setRotationSpeed(3.14159/4);
+                isCorrectAngle = false;
             }
-//        } else if(abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) < 0.5){
-//            robot.setTranslationSpeed(250);
-//        } else if((abs(xZelana - positionDataStruct.x) < 0.5 && abs(yZelana - positionDataStruct.y) > 0.5 )
-//                  || (abs(xZelana - positionDataStruct.x) > 0.5 && abs(yZelana - positionDataStruct.y) < 0.5)){
-//            isCorrectAngle = false;
-        } else if(abs(wanted_angle - positionDataStruct.fi) > 2.5){
+        } else if(abs(wanted_angle - positionDataStruct.fi) > 2.0){
             isCorrectAngle = false;
         }else {
-            robot.setTranslationSpeed(500);
+            robot.setTranslationSpeed(300);
         }
     }
-//    cout<<"abs wanted angle: " << abs(wanted_angle - positionDataStruct.fi) << endl;
-//    cout<<"Left: " << turningLeft << endl;
-//    cout<<"Right: " << turningRight << endl;
-//    if(!isCorrectAngle) {
-//        if(abs(wanted_angle - positionDataStruct.fi) < 1) {
-//            robot.setRotationSpeed(0);
-//            turningRight = false;
-//            turningLeft = false;
-//            isCorrectAngle = true;
-//            cout<<"Sme tu: " << wanted_angle<< endl;
-//        } else if(abs(wanted_angle - positionDataStruct.fi) <= 180 && !turningLeft) {
-//            robot.setRotationSpeed(-3.14159/4);
-//            turningRight = true;
-//        } else if(abs(wanted_angle - positionDataStruct.fi) > 180 && !turningRight) {
-//            robot.setRotationSpeed(3.14159/4);
-//            turningLeft = true;
-//        }
-//    } else {
-//        if(abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) < 0.05) {
-//            isCorrectPosition = true;
-//            robot.setTranslationSpeed(0);
-//        } else if((abs(xZelana - positionDataStruct.x) < 0.05 && abs(yZelana - positionDataStruct.y) > 0.05)
-//                  || (abs(xZelana - positionDataStruct.x) > 0.05 && abs(yZelana - positionDataStruct.y) < 0.05)) {
-//            isCorrectAngle = false;
-//        } else {
-//            robot.setTranslationSpeed(500);
-//        }
-//    }
 
-// TODO DOROBIT
-//    if(abs((xZelana - positionDataStruct.x)) <= 0.1)
-//    if(xZelana < positionDataStruct.x) {
-//        robot.setTranslationSpeed(500);
-//    } else if(xZelana > positionDataStruct.x){
-//        robot.setTranslationSpeed(500);
-//    }
-
-//    if(forwardspeed==0 && rotationspeed!=0)
-//        robot.setRotationSpeed(rotationspeed);
-//    else if(forwardspeed!=0 && rotationspeed==0)
-//        robot.setTranslationSpeed(forwardspeed);
-//    else if((forwardspeed!=0 && rotationspeed!=0))
-//        robot.setArcSpeed(forwardspeed,forwardspeed/rotationspeed);
-//    else
-//        robot.setTranslationSpeed(0);
-//    robot.setTranslationSpeed(500);
 
 
 ///TU PISTE KOD... TOTO JE TO MIESTO KED NEVIETE KDE ZACAT,TAK JE TO NAOZAJ TU. AK AJ TAK NEVIETE, SPYTAJTE SA CVICIACEHO MA TU NATO STRING KTORY DA DO HLADANIA XXX
@@ -296,8 +260,8 @@ int MainWindow::processThisCamera(cv::Mat cameraData)
 {
 
     cameraData.copyTo(frame[(actIndex+1)%3]);//kopirujem do nasej strukury
-    cout<<"W: " << cameraData.size().width<< endl;
-    cout<<"H: " << cameraData.size().height<< endl;
+//    cout<<"W: " << cameraData.size().width<< endl;
+//    cout<<"H: " << cameraData.size().height<< endl;
     actIndex=(actIndex+1)%3;//aktualizujem kde je nova fotka
     updateLaserPicture=1;
     return 0;
