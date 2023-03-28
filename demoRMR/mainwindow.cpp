@@ -12,6 +12,9 @@
 /// AK SA DOSTANES NA SKUSKU
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
+void executeTask1(Robot robot);
+void executeTask2(LaserMeasurement copyOfLaserData);
+void printGrid(int x, int y);
 double xZelana = -3.0;
 double yZelana = -3.0;
 bool turningLeft = false;
@@ -19,17 +22,18 @@ bool turningRight = false;
 bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
+// TODO zmensit velkost stvorceka na 5-10cm
+int grid[60][60] = {{0}};
 
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    positionDataStruct.x = 0;
-    positionDataStruct.y = 0;
+    positionDataStruct.x = 6;
+    positionDataStruct.y = 6;
     positionDataStruct.fi = 0;
     positionDataStruct.fi_radian = 0;
-
 //    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
@@ -142,6 +146,46 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     }
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+
+    /*
+     * Uloha 2
+     */
+    executeTask2(copyOfLaserData);
+    /*
+     * Uloha 1
+     */
+//    executeTask1(robot);
+
+
+
+
+///TU PISTE KOD... TOTO JE TO MIESTO KED NEVIETE KDE ZACAT,TAK JE TO NAOZAJ TU. AK AJ TAK NEVIETE, SPYTAJTE SA CVICIACEHO MA TU NATO STRING KTORY DA DO HLADANIA XXX
+
+    if(datacounter%5)
+    {
+
+        ///ak nastavite hodnoty priamo do prvkov okna,ako je to na tychto zakomentovanych riadkoch tak sa moze stat ze vam program padne
+                // ui->lineEdit_2->setText(QString::number(robotdata.EncoderRight));
+                //ui->lineEdit_3->setText(QString::number(robotdata.EncoderLeft));
+                //ui->lineEdit_4->setText(QString::number(robotdata.GyroAngle));
+                /// lepsi pristup je nastavit len nejaku premennu, a poslat signal oknu na prekreslenie
+                /// okno pocuva vo svojom slote a vasu premennu nastavi tak ako chcete. prikaz emit to presne takto spravi
+                /// viac o signal slotoch tu: https://doc.qt.io/qt-5/signalsandslots.html
+        ///posielame sem nezmysli.. pohrajte sa nech sem idu zmysluplne veci
+//        emit uiValuesChanged(robotdata.EncoderLeft,11,15);
+        emit uiValuesChanged(positionDataStruct.x,positionDataStruct.y,positionDataStruct.fi);
+        ///toto neodporucam na nejake komplikovane struktury.signal slot robi kopiu dat. radsej vtedy posielajte
+        /// prazdny signal a slot bude vykreslovat strukturu (vtedy ju musite mat samozrejme ako member premmennu v mainwindow.ak u niekoho najdem globalnu premennu,tak bude cistit bludisko zubnou kefkou.. kefku dodam)
+        /// vtedy ale odporucam pouzit mutex, aby sa vam nestalo ze budete pocas vypisovania prepisovat niekde inde
+
+    }
+    datacounter++;
+
+    return 0;
+
+}
+
+void executeTask1(Robot &robot) {
     double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
     if(wanted_angle < 0) {
         wanted_angle += 360;
@@ -197,33 +241,6 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
             robot.setTranslationSpeed(300);
         }
     }
-
-
-
-///TU PISTE KOD... TOTO JE TO MIESTO KED NEVIETE KDE ZACAT,TAK JE TO NAOZAJ TU. AK AJ TAK NEVIETE, SPYTAJTE SA CVICIACEHO MA TU NATO STRING KTORY DA DO HLADANIA XXX
-
-    if(datacounter%5)
-    {
-
-        ///ak nastavite hodnoty priamo do prvkov okna,ako je to na tychto zakomentovanych riadkoch tak sa moze stat ze vam program padne
-                // ui->lineEdit_2->setText(QString::number(robotdata.EncoderRight));
-                //ui->lineEdit_3->setText(QString::number(robotdata.EncoderLeft));
-                //ui->lineEdit_4->setText(QString::number(robotdata.GyroAngle));
-                /// lepsi pristup je nastavit len nejaku premennu, a poslat signal oknu na prekreslenie
-                /// okno pocuva vo svojom slote a vasu premennu nastavi tak ako chcete. prikaz emit to presne takto spravi
-                /// viac o signal slotoch tu: https://doc.qt.io/qt-5/signalsandslots.html
-        ///posielame sem nezmysli.. pohrajte sa nech sem idu zmysluplne veci
-//        emit uiValuesChanged(robotdata.EncoderLeft,11,15);
-        emit uiValuesChanged(positionDataStruct.x,positionDataStruct.y,positionDataStruct.fi);
-        ///toto neodporucam na nejake komplikovane struktury.signal slot robi kopiu dat. radsej vtedy posielajte
-        /// prazdny signal a slot bude vykreslovat strukturu (vtedy ju musite mat samozrejme ako member premmennu v mainwindow.ak u niekoho najdem globalnu premennu,tak bude cistit bludisko zubnou kefkou.. kefku dodam)
-        /// vtedy ale odporucam pouzit mutex, aby sa vam nestalo ze budete pocas vypisovania prepisovat niekde inde
-
-    }
-    datacounter++;
-
-    return 0;
-
 }
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick) {
@@ -235,6 +252,32 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
         res = (long double)(tick+65536)- (long double)previousTick;
     }
     return tickToMeter * res;
+}
+
+void executeTask2(LaserMeasurement copyOfLaserData) {
+        for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+        {
+            if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
+            double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+            double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+            grid[(int) (yg/20.0)][(int) (xg/20.0)] = 1;
+        }
+//        int k = 0;
+
+//        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
+//        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
+
+        cout << "Retard" << endl;
+        printGrid(60,60);
+}
+
+void printGrid(int x, int y) {
+    for(int i = 0; i < y; i++) {
+        for(int j = 0; j < x; j++) {
+            cout << grid[i][j] << " ";
+        }
+        cout << endl;
+    }
 }
 
 ///toto je calback na data z lidaru, ktory ste podhodili robotu vo funkcii on_pushButton_9_clicked
