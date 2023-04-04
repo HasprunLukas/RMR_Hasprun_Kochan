@@ -13,7 +13,7 @@
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
 void executeTask1(Robot robot);
-void executeTask2(LaserMeasurement copyOfLaserData);
+void executeTask3(LaserMeasurement copyOfLaserData);
 void printGrid(int x, int y);
 double xZelana = -3.0;
 double yZelana = -3.0;
@@ -23,7 +23,7 @@ bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
 // TODO zmensit velkost stvorceka na 5-10cm
-int grid[60][60] = {{0}};
+int grid[240][240] = {{0}};
 
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
@@ -148,9 +148,9 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     /*
-     * Uloha 2
+     * Uloha 3
      */
-    executeTask2(copyOfLaserData);
+    executeTask3(copyOfLaserData);
     /*
      * Uloha 1
      */
@@ -254,21 +254,21 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
     return tickToMeter * res;
 }
 
-void executeTask2(LaserMeasurement copyOfLaserData) {
+void executeTask3(LaserMeasurement copyOfLaserData) {
         for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
         {
             if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
             double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
             double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-            grid[(int) (yg/20.0)][(int) (xg/20.0)] = 1;
+            grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
         }
 //        int k = 0;
 
 //        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
 //        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
 
-        cout << "Retard" << endl;
-        printGrid(60,60);
+//        cout << "Retard" << endl;
+//        printGrid(240,240);
 }
 
 void printGrid(int x, int y) {
