@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
-#include <tgmath.h>
+//#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
 /// AK HO MAS Z GITU A ROBIS NA LABAKOVOM PC, TAK SI HO VLOZ DO FOLDERA KTORY JE JASNE ODLISITELNY OD TVOJICH KOLEGOV
 /// NASLEDNE V POLOZKE Projects SKONTROLUJ CI JE VYPNUTY shadow build...
@@ -15,6 +15,7 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick);
 void executeTask1(Robot robot);
 void executeTask3(LaserMeasurement copyOfLaserData);
 void printGrid(int x, int y);
+void printMatrix(int x, int y);
 double xZelana = -3.0;
 double yZelana = -3.0;
 bool turningLeft = false;
@@ -22,7 +23,7 @@ bool turningRight = false;
 bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
-// TODO zmensit velkost stvorceka na 5-10cm
+cv::Mat myGrid(cv::Size(240, 240), CV_64F);
 int grid[240][240] = {{0}};
 
 PositionData positionDataStruct;
@@ -34,11 +35,13 @@ MainWindow::MainWindow(QWidget *parent) :
     positionDataStruct.y = 6;
     positionDataStruct.fi = 0;
     positionDataStruct.fi_radian = 0;
+    printMatrix(240, 240);
 //    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-    ipaddress="192.168.1.13";
+    ipaddress="127.0.0.1";
+//    ipaddress="192.168.1.13";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -261,20 +264,34 @@ void executeTask3(LaserMeasurement copyOfLaserData) {
             double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
             double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
             grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
         }
 //        int k = 0;
 
 //        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
 //        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
 
-//        cout << "Retard" << endl;
+        cout << "Retard" << endl;
 //        printGrid(240,240);
+//        printMatrix(240, 240);
+        //TODO zmen cestu
+        cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
 }
 
 void printGrid(int x, int y) {
     for(int i = 0; i < y; i++) {
         for(int j = 0; j < x; j++) {
             cout << grid[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+void printMatrix(int x, int y) {
+    for(int i = 0; i < y; i++) {
+        for(int j = 0; j < x; j++) {
+//            cout << grid[i][j] << " ";
+            cout << myGrid.at<double>(i,j) << " ";
         }
         cout << endl;
     }
