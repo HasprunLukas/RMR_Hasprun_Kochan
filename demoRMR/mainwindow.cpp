@@ -23,6 +23,7 @@ bool turningRight = false;
 bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
+bool isRotating = false;
 cv::Mat myGrid(cv::Size(240, 240), CV_64F);
 int grid[240][240] = {{0}};
 
@@ -40,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-    ipaddress="127.0.0.1";
-//    ipaddress="192.168.1.13";
+//    ipaddress="127.0.0.1";
+    ipaddress="192.168.1.13";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -197,6 +198,7 @@ void executeTask1(Robot &robot) {
     if(!isCorrectAngle) {
         if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
             robot.setRotationSpeed(0);
+            isRotating = false;
             isCorrectAngle = true;
         } else {
             double rotation_speed = 3.14159/4;
@@ -210,15 +212,19 @@ void executeTask1(Robot &robot) {
 
             if((wanted_angle - positionDataStruct.fi) >= 0.0 && (wanted_angle - positionDataStruct.fi) < 180.0){
                 robot.setRotationSpeed(rotation_speed); //turn left
+                isRotating = true;
             }
             else if((wanted_angle - positionDataStruct.fi) > 180.0){
                 robot.setRotationSpeed(-rotation_speed); //turn right
+                isRotating = true;
             }
             else if((wanted_angle - positionDataStruct.fi) < 0.0 && (wanted_angle - positionDataStruct.fi) > -180.0){
                 robot.setRotationSpeed(-rotation_speed); //turn right
+                isRotating = true;
             }
             else if((wanted_angle - positionDataStruct.fi) < -180.0){
                 robot.setRotationSpeed(rotation_speed); //turn left
+                isRotating = true;
             }
         }
     } else {
@@ -258,24 +264,30 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
 }
 
 void executeTask3(LaserMeasurement copyOfLaserData) {
-        for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
-        {
-            if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
-            double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-            double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-            grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
-            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+        if(!isRotating) {
+            for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+            {
+                if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
+                double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+                double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+    //            if(k == 0) {
+    //                cout<<"xg = " << xg << endl;
+    //                cout<<"yg = " << yg << endl;
+    //            }
+                grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+                myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+            }
+    //        int k = 0;
+
+    //        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
+    //        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
+
+    //        cout << "Retard" << endl;
+    //        printGrid(240,240);
+    //        printMatrix(240, 240);
+            //TODO zmen cestu
+            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
-//        int k = 0;
-
-//        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
-//        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
-
-        cout << "Retard" << endl;
-//        printGrid(240,240);
-//        printMatrix(240, 240);
-        //TODO zmen cestu
-        cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
 }
 
 void printGrid(int x, int y) {
@@ -362,24 +374,28 @@ void MainWindow::on_pushButton_2_clicked() //forward
 {
     //pohyb dopredu
     robot.setTranslationSpeed(500);
+    isRotating = false;
 
 }
 
 void MainWindow::on_pushButton_3_clicked() //back
 {
     robot.setTranslationSpeed(-250);
+    isRotating = false;
 
 }
 
 void MainWindow::on_pushButton_6_clicked() //left
 {
 robot.setRotationSpeed(3.14159/2);
+isRotating = true;
 
 }
 
 void MainWindow::on_pushButton_5_clicked()//right
 {
 robot.setRotationSpeed(-3.14159/2);
+isRotating = true;
 
 }
 
