@@ -24,6 +24,8 @@ bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
 bool isRotating = false;
+int positionX = 0;
+int positionY = 0;
 cv::Mat myGrid(cv::Size(240, 240), CV_64F);
 int grid[240][240] = {{0}};
 
@@ -34,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     positionDataStruct.x = 6;
     positionDataStruct.y = 6;
+    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+    positionY = positionDataStruct.y * 100;
     positionDataStruct.fi = 0;
     positionDataStruct.fi_radian = 0;
     printMatrix(240, 240);
@@ -41,8 +45,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-//    ipaddress="127.0.0.1";
-    ipaddress="192.168.1.13";
+    ipaddress="127.0.0.1";
+//    ipaddress="192.168.1.13";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -265,7 +269,7 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
 
 void executeTask3(LaserMeasurement copyOfLaserData) {
         if(!isRotating) {
-            for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+            for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)//TODO zrichlovanie a spomalovanie to s tich tlacidiel sem a aj urobit to pre otacanie
             {
                 if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
                 double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
@@ -286,7 +290,7 @@ void executeTask3(LaserMeasurement copyOfLaserData) {
     //        printGrid(240,240);
     //        printMatrix(240, 240);
             //TODO zmen cestu
-            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+            cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
 }
 
@@ -373,36 +377,62 @@ void MainWindow::on_pushButton_9_clicked() //start button
 void MainWindow::on_pushButton_2_clicked() //forward
 {
     //pohyb dopredu
-    robot.setTranslationSpeed(500);
-    isRotating = false;
+    double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
 
+    if(absolut_distance <= 16){
+        robot.setTranslationSpeed(50);
+    }
+    else if(absolut_distance >= 100){
+        robot.setTranslationSpeed(300);
+    }
+    else{
+        robot.setTranslationSpeed((absolut_distance / 100) * 300);
+    }
+
+    isRotating = false;
+    cout << "absolut_distance: " << absolut_distance << endl;
+    cout << "setTranslationSpeed: " << ((absolut_distance / 100) * (300)) << endl;
+    cout << "-------------------------" << endl;
 }
 
 void MainWindow::on_pushButton_3_clicked() //back
 {
-    robot.setTranslationSpeed(-250);
-    isRotating = false;
+    double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
 
+    if(absolut_distance <= 20){
+        robot.setTranslationSpeed(-50);
+    }
+    else if(absolut_distance >= 100){
+        robot.setTranslationSpeed(-250);
+    }
+    else{
+        robot.setTranslationSpeed((absolut_distance / 100) * (-250));
+    }
+
+    isRotating = false;
 }
 
 void MainWindow::on_pushButton_6_clicked() //left
 {
-robot.setRotationSpeed(3.14159/2);
-isRotating = true;
-
+    robot.setRotationSpeed(3.14159/2);
+    isRotating = true;
+    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+    positionY = positionDataStruct.y * 100;
 }
 
 void MainWindow::on_pushButton_5_clicked()//right
 {
-robot.setRotationSpeed(-3.14159/2);
-isRotating = true;
-
+    robot.setRotationSpeed(-3.14159/2);
+    isRotating = true;
+    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+    positionY = positionDataStruct.y * 100;
 }
 
 void MainWindow::on_pushButton_4_clicked() //stop
 {
     robot.setTranslationSpeed(0);
-
+    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+    positionY = positionDataStruct.y * 100;
 }
 
 
