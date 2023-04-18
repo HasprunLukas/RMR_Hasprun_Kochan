@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
+//#include "robot.h"
 //#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
 /// AK HO MAS Z GITU A ROBIS NA LABAKOVOM PC, TAK SI HO VLOZ DO FOLDERA KTORY JE JASNE ODLISITELNY OD TVOJICH KOLEGOV
@@ -13,7 +14,7 @@
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
 void executeTask1(Robot robot);
-void executeTask3(LaserMeasurement copyOfLaserData);
+void executeTask3(LaserMeasurement copyOfLaserData, Robot robot);
 void printGrid(int x, int y);
 void printMatrix(int x, int y);
 double xZelana = -3.0;
@@ -24,6 +25,9 @@ bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
 bool isRotating = false;
+bool ismovingF = false;
+bool ismovingB = false;
+int speedT = 0;
 int positionX = 0;
 int positionY = 0;
 cv::Mat myGrid(cv::Size(240, 240), CV_64F);
@@ -158,7 +162,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     /*
      * Uloha 3
      */
-    executeTask3(copyOfLaserData);
+    executeTask3(copyOfLaserData, robot);
     /*
      * Uloha 1
      */
@@ -267,7 +271,7 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
     return tickToMeter * res;
 }
 
-void executeTask3(LaserMeasurement copyOfLaserData) {
+void executeTask3(LaserMeasurement copyOfLaserData, Robot &robot) {
         if(!isRotating) {
             for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)//TODO zrichlovanie a spomalovanie to s tich tlacidiel sem a aj urobit to pre otacanie
             {
@@ -281,6 +285,50 @@ void executeTask3(LaserMeasurement copyOfLaserData) {
                 grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
                 myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
             }
+
+            if(ismovingF == true){
+                double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
+                speedT = (absolut_distance / 100) * 300;
+
+                if(speedT < 50){
+                    robot.setTranslationSpeed(50);
+//                    speedT = 50;
+                }
+                else if(speedT >= 300){
+                    robot.setTranslationSpeed(300);
+//                    speedT = 300;
+                }
+                else{
+                    robot.setTranslationSpeed(speedT);
+//                    speedT = speedT;
+                }
+                cout << "absolut_distance: " << absolut_distance << endl;
+                cout << "setTranslationSpeed: " << (speedT) << endl;
+                cout << "-------------------------" << endl;
+
+            }
+            else if(ismovingB == true){
+                double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
+                speedT = (absolut_distance / 100) * 250;
+
+                if(speedT < 50){
+                    robot.setTranslationSpeed(-50);
+//                    speedT = -50;
+                }
+                else if(speedT >= 250){
+                    robot.setTranslationSpeed(-250);
+//                    speedT = -250;
+                }
+                else{
+                    robot.setTranslationSpeed(-speedT);
+//                    speedT = -speedT;
+                }
+                cout << "absolut_distance: " << absolut_distance << endl;
+                cout << "setTranslationSpeed: " << (speedT) << endl;
+                cout << "-------------------------" << endl;
+            }
+
+
     //        int k = 0;
 
     //        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
@@ -377,44 +425,27 @@ void MainWindow::on_pushButton_9_clicked() //start button
 void MainWindow::on_pushButton_2_clicked() //forward
 {
     //pohyb dopredu
-    double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
-
-    if(absolut_distance <= 16){
-        robot.setTranslationSpeed(50);
-    }
-    else if(absolut_distance >= 100){
-        robot.setTranslationSpeed(300);
-    }
-    else{
-        robot.setTranslationSpeed((absolut_distance / 100) * 300);
-    }
-
+//    robot.setTranslationSpeed(300);
+//    robot.setTranslationSpeed(speedT);
+    ismovingF = true;
+    ismovingB = false;
     isRotating = false;
-    cout << "absolut_distance: " << absolut_distance << endl;
-    cout << "setTranslationSpeed: " << ((absolut_distance / 100) * (300)) << endl;
-    cout << "-------------------------" << endl;
 }
 
 void MainWindow::on_pushButton_3_clicked() //back
 {
-    double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
-
-    if(absolut_distance <= 20){
-        robot.setTranslationSpeed(-50);
-    }
-    else if(absolut_distance >= 100){
-        robot.setTranslationSpeed(-250);
-    }
-    else{
-        robot.setTranslationSpeed((absolut_distance / 100) * (-250));
-    }
-
+//    robot.setTranslationSpeed(-250);
+//    robot.setTranslationSpeed(speedT);
+    ismovingF = false;
+    ismovingB = true;
     isRotating = false;
 }
 
 void MainWindow::on_pushButton_6_clicked() //left
 {
     robot.setRotationSpeed(3.14159/2);
+    ismovingF = false;
+    ismovingB = false;
     isRotating = true;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
@@ -423,6 +454,8 @@ void MainWindow::on_pushButton_6_clicked() //left
 void MainWindow::on_pushButton_5_clicked()//right
 {
     robot.setRotationSpeed(-3.14159/2);
+    ismovingF = false;
+    ismovingB = false;
     isRotating = true;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
@@ -431,6 +464,9 @@ void MainWindow::on_pushButton_5_clicked()//right
 void MainWindow::on_pushButton_4_clicked() //stop
 {
     robot.setTranslationSpeed(0);
+    ismovingF = false;
+    ismovingB = false;
+//    isRotating = false;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
 }
