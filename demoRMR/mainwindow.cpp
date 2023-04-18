@@ -276,6 +276,7 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
             if(speedT >= 50 && speedT <= 200) {
                 for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
                 {
+                    // TODO pridat zamedzit pri 64-70cm
                     if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
                     double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
                     double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
