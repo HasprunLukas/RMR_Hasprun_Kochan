@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
+//#include <unistd.h>
 //#include "robot.h"
 //#include <tgmath.h>
 ///TOTO JE DEMO PROGRAM...AK SI HO NASIEL NA PC V LABAKU NEPREPISUJ NIC,ALE SKOPIRUJ SI MA NIEKAM DO INEHO FOLDERA
@@ -13,8 +14,7 @@
 /// AK SA DOSTANES NA SKUSKU
 
 double getTickToMeter(unsigned short previousTick, unsigned short tick);
-void executeTask1(Robot robot);
-void executeTask3(LaserMeasurement copyOfLaserData, Robot robot);
+
 void printGrid(int x, int y);
 void printMatrix(int x, int y);
 double xZelana = -3.0;
@@ -49,8 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-    ipaddress="127.0.0.1";
-//    ipaddress="192.168.1.13";
+//    ipaddress="127.0.0.1";
+    ipaddress="192.168.1.14";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -162,11 +162,11 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     /*
      * Uloha 3
      */
-    executeTask3(copyOfLaserData, robot);
+    executeTask3(copyOfLaserData);
     /*
      * Uloha 1
      */
-//    executeTask1(robot);
+//    executeTask1();
 
 
 
@@ -197,7 +197,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 
 }
 
-void executeTask1(Robot &robot) {
+void MainWindow::executeTask1() {
     double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
     if(wanted_angle < 0) {
         wanted_angle += 360;
@@ -271,24 +271,27 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
     return tickToMeter * res;
 }
 
-void executeTask3(LaserMeasurement copyOfLaserData, Robot &robot) {
+void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
         if(!isRotating) {
-            for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)//TODO zrichlovanie a spomalovanie to s tich tlacidiel sem a aj urobit to pre otacanie
-            {
-                if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
-                double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-                double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-    //            if(k == 0) {
-    //                cout<<"xg = " << xg << endl;
-    //                cout<<"yg = " << yg << endl;
-    //            }
-                grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
-                myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+            if(speedT >= 50 && speedT <= 200) {
+                for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+                {
+                    if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
+                    double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+                    double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+        //            if(k == 0) {
+        //                cout<<"xg = " << xg << endl;
+        //                cout<<"yg = " << yg << endl;
+        //            }
+                    grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+                    myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+                }
             }
 
             if(ismovingF == true){
                 double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
-                speedT = (absolut_distance / 100) * 300;
+                speedT = (absolut_distance / 50) * 300;
+                if(speedT > 300) speedT = 300;
 
                 if(speedT < 50){
                     robot.setTranslationSpeed(50);
@@ -309,7 +312,8 @@ void executeTask3(LaserMeasurement copyOfLaserData, Robot &robot) {
             }
             else if(ismovingB == true){
                 double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
-                speedT = (absolut_distance / 100) * 250;
+                speedT = (absolut_distance / 50) * 250;
+                if(speedT > 250) speedT = 250;
 
                 if(speedT < 50){
                     robot.setTranslationSpeed(-50);
@@ -338,7 +342,7 @@ void executeTask3(LaserMeasurement copyOfLaserData, Robot &robot) {
     //        printGrid(240,240);
     //        printMatrix(240, 240);
             //TODO zmen cestu
-            cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
 }
 
@@ -466,7 +470,8 @@ void MainWindow::on_pushButton_4_clicked() //stop
     robot.setTranslationSpeed(0);
     ismovingF = false;
     ismovingB = false;
-//    isRotating = false;
+//    // true nech nesnima body pri STOP
+    isRotating = true;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
 }
