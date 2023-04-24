@@ -49,8 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-//    ipaddress="127.0.0.1";
-    ipaddress="192.168.1.14";
+    ipaddress="127.0.0.1";
+//    ipaddress="192.168.1.14";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -146,13 +146,17 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
     } else {
         double previousFi = positionDataStruct.fi_radian;
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
         positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
@@ -343,7 +347,7 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
     //        printGrid(240,240);
     //        printMatrix(240, 240);
             //TODO zmen cestu
-            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+            cv::imwrite("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
 }
 
