@@ -54,8 +54,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-    ipaddress="127.0.0.1";
-//    ipaddress="192.168.1.14";
+//    ipaddress="127.0.0.1";
+    ipaddress="192.168.1.13";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -136,9 +136,12 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     if(startApp) {
         positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
         positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
+
         startApp = false;
     }
 
+    static double firstGyro=robotdata.GyroAngle;
+    positionDataStruct.fi_gyro=(robotdata.GyroAngle-firstGyro)/100.0;
     ///tu mozete robit s datami z robota
     /// ale nic vypoctovo narocne - to iste vlakno ktore cita data z robota
     ///teraz tu posielam rychlosti na zaklade toho co setne joystick a vypisujeme data z robota(kazdy 5ty krat. ale mozete skusit aj castejsie). vyratajte si polohu. a vypiste spravnu
@@ -148,22 +151,23 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     double lengthRight = getTickToMeter(positionDataStruct.previousEncoderRight, robotdata.EncoderRight);
     double lengthLeft = getTickToMeter(positionDataStruct.previousEncoderLeft, robotdata.EncoderLeft);
     if(lengthRight == lengthLeft) {
+        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
-        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
-        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
+
+//        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+//        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
     } else {
         double previousFi = positionDataStruct.fi_radian;
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
-        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
-        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
-        positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
-        positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
+        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+//        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
+        positionDataStruct.x += ((d*(lengthRight+lengthLeft))/(2.0*(lengthRight-lengthLeft)))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
+        positionDataStruct.y -= ((d*(lengthRight+lengthLeft))/(2.0*(lengthRight-lengthLeft)))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
@@ -175,7 +179,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     /*
      * Uloha 3
      */
-    executeTask3(copyOfLaserData);
+    executeTask3(/*copyOfLaserData*/);
     /*
      * Uloha 1
      */
@@ -289,32 +293,32 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
     return tickToMeter * res;
 }
 
-void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
+void MainWindow::executeTask3(/*LaserMeasurement copyOfLaserData*/) {
         if((!isRotatingR && !isRotatingL) && (speedDirection == 1 || speedDirection == -1 )) {
-            if(speedT >= 50 && speedT <= 200) {
-                for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
-                {
-                    if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
-                    double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-                    double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
-        //            if(k == 0) {
-        //                cout<<"xg = " << xg << endl;
-        //                cout<<"yg = " << yg << endl;
-        //            }
-                    grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
-                    myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
-                }
-            }
+//            if(speedT >= 50 && speedT <= 200) {
+//                for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+//                {
+//                    if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+//                    double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+//                    double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
+//        //            if(k == 0) {
+//        //                cout<<"xg = " << xg << endl;
+//        //                cout<<"yg = " << yg << endl;
+//        //            }
+//                    grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+//                    myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+//                }
+//            }
 
             if(ismovingF == true){
                 double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
-                speedT = (absolut_distance / 50) * 300;
+                speedT = (absolut_distance / 50) * 200;
                 if(speedT < 50){
                     speedT = 50;
                     robot.setTranslationSpeed(speedT);
                 }
-                else if(speedT >= 300){
-                    speedT = 300;
+                else if(speedT >= 200){
+                    speedT = 200;
                     robot.setTranslationSpeed(speedT);
                 }
                 else{
@@ -346,8 +350,8 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
                 cout << "-------------------------" << endl;
             }
             else if((ismovingF == false) && (speedDirection == 1)){
-                double absolut_distance = (speedT * 50.0) / 300.0;
-                speedT = ((absolut_distance - 0.2) / 50) * 300;
+                double absolut_distance = (speedT * 50.0) / 200.0;
+                speedT = ((absolut_distance - 0.2) / 50) * 200;
                 if(speedT <= 0){
                     speedT = 0;
                     robot.setTranslationSpeed(speedT);
@@ -381,7 +385,7 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
                 positionY = positionDataStruct.y * 100;
                 positionfi = positionDataStruct.fi;
             }
-            cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//            cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
 //            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
         /* ak bi som mal ze positionfi je -+180
@@ -624,6 +628,21 @@ int MainWindow::processThisLidar(LaserMeasurement laserData)
 
     memcpy( &copyOfLaserData,&laserData,sizeof(LaserMeasurement));
     //tu mozete robit s datami z lidaru.. napriklad najst prekazky, zapisat do mapy. naplanovat ako sa prekazke vyhnut.
+    if(speedT >= 50 && speedT <= 200) {
+        for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+        {
+            if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+            double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+            double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+//            if(k == 0) {
+//                cout<<"xg = " << xg << endl;
+//                cout<<"yg = " << yg << endl;
+//            }
+            grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+        }
+    }
+    cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
     // ale nic vypoctovo narocne - to iste vlakno ktore cita data z lidaru
     updateLaserPicture=1;
     update();//tento prikaz prinuti prekreslit obrazovku.. zavola sa paintEvent funkcia
@@ -712,6 +731,7 @@ void MainWindow::on_pushButton_6_clicked() //left
 {
 //    robot.setRotationSpeed(3.14159/2);
     if(speedDirection == 0){
+      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
         ismovingF = false;
         ismovingB = false;
         isRotatingR = false;
@@ -727,6 +747,7 @@ void MainWindow::on_pushButton_5_clicked()//right
 {
 //    robot.setRotationSpeed(-3.14159/2);
     if(speedDirection == 0){
+      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
         ismovingF = false;
         ismovingB = false;
         isRotatingR = true;

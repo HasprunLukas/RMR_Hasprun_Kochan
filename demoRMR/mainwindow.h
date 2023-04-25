@@ -40,7 +40,7 @@ typedef struct
     double y;
     double fi;
     double fi_radian;
-
+    double fi_gyro;
 }PositionData;
 
 ///toto je trieda s oknom.. ktora sa spusti ked sa spusti aplikacia.. su tu vsetky gombiky a spustania...
@@ -83,7 +83,7 @@ private slots:
 
 private:
     void executeTask1();
-    void executeTask3(LaserMeasurement copyOfLaserData);
+    void executeTask3(/*LaserMeasurement copyOfLaserData*/);
     void executeTask4();
     //--skuste tu nic nevymazat... pridavajte co chcete, ale pri odoberani by sa mohol stat nejaky drobny problem, co bude vyhadzovat chyby
     Ui::MainWindow *ui;
