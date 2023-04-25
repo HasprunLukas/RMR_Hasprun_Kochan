@@ -151,13 +151,17 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
     } else {
         double previousFi = positionDataStruct.fi_radian;
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
-        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian += fmod(((lengthRight - lengthLeft) / d)+2*PI, 2*PI);
+//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
+        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
         positionDataStruct.x += (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= (d*(lengthRight+lengthLeft))/(2*(lengthRight-lengthLeft))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
     }
@@ -329,7 +333,7 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
                     speedT = 50;
                     robot.setTranslationSpeed(-speedT);
                 }
-                else if(speedT >= 250){                    
+                else if(speedT >= 250){
                     speedT = 250;
                     robot.setTranslationSpeed(-speedT);
                 }
