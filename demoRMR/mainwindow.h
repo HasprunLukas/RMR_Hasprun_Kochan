@@ -84,6 +84,7 @@ private slots:
 private:
     void executeTask1();
     void executeTask3(LaserMeasurement copyOfLaserData);
+    void executeTask4();
     //--skuste tu nic nevymazat... pridavajte co chcete, ale pri odoberani by sa mohol stat nejaky drobny problem, co bude vyhadzovat chyby
     Ui::MainWindow *ui;
      void paintEvent(QPaintEvent *event);// Q_DECL_OVERRIDE;

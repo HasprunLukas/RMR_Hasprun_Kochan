@@ -24,14 +24,19 @@ bool turningRight = false;
 bool isCorrectAngle = false;
 bool isCorrectPosition = false;
 bool startApp = true;
-bool isRotating = false;
+bool isRotatingR = false;
+bool isRotatingL = false;
 bool ismovingF = false;
 bool ismovingB = false;
 int speedT = 0;
+double speedR = 0;
+int speedDirection = 0;
 int positionX = 0;
 int positionY = 0;
+double positionfi = 0;
 cv::Mat myGrid(cv::Size(240, 240), CV_64F);
 int grid[240][240] = {{0}};
+int path[2][240] = {{0}};
 
 PositionData positionDataStruct;
 MainWindow::MainWindow(QWidget *parent) :
@@ -49,8 +54,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-//    ipaddress="127.0.0.1";
-    ipaddress="192.168.1.14";
+    ipaddress="127.0.0.1";
+//    ipaddress="192.168.1.14";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -160,6 +165,10 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     /*
+     * Uloha 4
+     */
+//    executeTask4();
+    /*
      * Uloha 3
      */
     executeTask3(copyOfLaserData);
@@ -206,12 +215,13 @@ void MainWindow::executeTask1() {
     if(!isCorrectAngle) {
         if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
             robot.setRotationSpeed(0);
-            isRotating = false;
+            isRotatingR = false;
+            isRotatingL = false;
             isCorrectAngle = true;
         } else {
             double rotation_speed = 3.14159/4;
             if(abs(wanted_angle - positionDataStruct.fi) <= 30) {
-                rotation_speed = (abs(wanted_angle - positionDataStruct.fi)*(PI/180)) * ((67.5*(PI/180))/(3.14159/4));
+                rotation_speed = (abs(wanted_angle - positionDataStruct.fi)*(PI/180)) * ((67.5*(PI/180))/(3.14159/4)); //((67.5*(PI/180))/(3.14159/4))=1.5
             }
 //            cout << "Rotation speed: " << rotation_speed <<" "<<abs(wanted_angle - positionDataStruct.fi)<< endl;
             if(rotation_speed < 0.2) {
@@ -220,19 +230,23 @@ void MainWindow::executeTask1() {
 
             if((wanted_angle - positionDataStruct.fi) >= 0.0 && (wanted_angle - positionDataStruct.fi) < 180.0){
                 robot.setRotationSpeed(rotation_speed); //turn left
-                isRotating = true;
+                isRotatingR = false;
+                isRotatingL = false;
             }
             else if((wanted_angle - positionDataStruct.fi) > 180.0){
                 robot.setRotationSpeed(-rotation_speed); //turn right
-                isRotating = true;
+                isRotatingR = false;
+                isRotatingL = false;
             }
             else if((wanted_angle - positionDataStruct.fi) < 0.0 && (wanted_angle - positionDataStruct.fi) > -180.0){
                 robot.setRotationSpeed(-rotation_speed); //turn right
-                isRotating = true;
+                isRotatingR = false;
+                isRotatingL = false;
             }
             else if((wanted_angle - positionDataStruct.fi) < -180.0){
                 robot.setRotationSpeed(rotation_speed); //turn left
-                isRotating = true;
+                isRotatingR = false;
+                isRotatingL = false;
             }
         }
     } else {
@@ -272,12 +286,11 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
 }
 
 void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
-        if(!isRotating) {
+        if((!isRotatingR && !isRotatingL) && (speedDirection == 1 || speedDirection == -1 )) {
             if(speedT >= 50 && speedT <= 200) {
                 for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
                 {
-                    // TODO pridat zamedzit pri 64-70cm
-                    if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3) continue;
+                    if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
                     double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
                     double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin(positionDataStruct.fi_radian + (-copyOfLaserData.Data[k].scanAngle*PI/180.0))));
         //            if(k == 0) {
@@ -292,20 +305,18 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
             if(ismovingF == true){
                 double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
                 speedT = (absolut_distance / 50) * 300;
-                if(speedT > 300) speedT = 300;
-
                 if(speedT < 50){
-                    robot.setTranslationSpeed(50);
-//                    speedT = 50;
+                    speedT = 50;
+                    robot.setTranslationSpeed(speedT);
                 }
                 else if(speedT >= 300){
-                    robot.setTranslationSpeed(300);
-//                    speedT = 300;
+                    speedT = 300;
+                    robot.setTranslationSpeed(speedT);
                 }
                 else{
                     robot.setTranslationSpeed(speedT);
-//                    speedT = speedT;
                 }
+                speedDirection = 1;
                 cout << "absolut_distance: " << absolut_distance << endl;
                 cout << "setTranslationSpeed: " << (speedT) << endl;
                 cout << "-------------------------" << endl;
@@ -314,37 +325,272 @@ void MainWindow::executeTask3(LaserMeasurement copyOfLaserData) {
             else if(ismovingB == true){
                 double absolut_distance = sqrt(pow(((positionDataStruct.x * 100.0) - positionX), 2) + pow(((positionDataStruct.y * 100.0) - positionY), 2)); // to  * 100 is to transform m into cm
                 speedT = (absolut_distance / 50) * 250;
-                if(speedT > 250) speedT = 250;
-
                 if(speedT < 50){
-                    robot.setTranslationSpeed(-50);
-//                    speedT = -50;
+                    speedT = 50;
+                    robot.setTranslationSpeed(-speedT);
                 }
-                else if(speedT >= 250){
-                    robot.setTranslationSpeed(-250);
-//                    speedT = -250;
+                else if(speedT >= 250){                    
+                    speedT = 250;
+                    robot.setTranslationSpeed(-speedT);
                 }
                 else{
                     robot.setTranslationSpeed(-speedT);
-//                    speedT = -speedT;
+                }
+                speedDirection = -1;
+                cout << "absolut_distance: " << absolut_distance << endl;
+                cout << "setTranslationSpeed: " << (speedT) << endl;
+                cout << "-------------------------" << endl;
+            }
+            else if((ismovingF == false) && (speedDirection == 1)){
+                double absolut_distance = (speedT * 50.0) / 300.0;
+                speedT = ((absolut_distance - 0.2) / 50) * 300;
+                if(speedT <= 0){
+                    speedT = 0;
+                    robot.setTranslationSpeed(speedT);
+                }
+                else{
+                    robot.setTranslationSpeed(speedT);
+                }
+                cout << "absolut_distance: " << absolut_distance << endl;
+                cout << "setTranslationSpeed: " << (speedT) << endl;
+                cout << "-------------------------" << endl;
+            }
+            else if((ismovingB == false) && (speedDirection == -1)){
+                double absolut_distance = (speedT * 50.0) / 250.0;
+                speedT = ((absolut_distance - 0.2) / 50) * 250;
+                if(speedT <= 0){
+                    speedT = 0;
+                    robot.setTranslationSpeed(-speedT);
+                }
+                else{
+                    robot.setTranslationSpeed(-speedT);
                 }
                 cout << "absolut_distance: " << absolut_distance << endl;
                 cout << "setTranslationSpeed: " << (speedT) << endl;
                 cout << "-------------------------" << endl;
             }
 
-
-    //        int k = 0;
-
-    //        cout << "scanAngle : " << copyOfLaserData.Data[0].scanAngle << endl;
-    //        cout << "scanDistance : " << copyOfLaserData.Data[0].scanDistance << endl;
-
-    //        cout << "Retard" << endl;
-    //        printGrid(240,240);
-    //        printMatrix(240, 240);
-            //TODO zmen cestu
-            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//            cout << "speedDirection: " << (speedDirection) << endl;
+            if(speedT == 0){
+                speedDirection = 0;
+                positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+                positionY = positionDataStruct.y * 100;
+                positionfi = positionDataStruct.fi;
+            }
+            cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//            cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
         }
+        /* ak bi som mal ze positionfi je -+180
+        if(positionfi < 0){
+            positionfi = positionfi + 360;
+        }
+        */
+        else if((!ismovingF && !ismovingB) && (speedDirection == 2 || speedDirection == -2 )){ //rotating right and left
+            if(isRotatingR == true){
+                double absolut_angle = positionfi - positionDataStruct.fi; // absolut_angle is in degrees and speedT is in radians
+                if(absolut_angle < 0){
+                    absolut_angle += 360;
+                }
+                speedR = ((absolut_angle / 45.0) * 45.0) * (PI/180.0); // x = a*(pi/180) degrees into radians. first(number) 45 = pi/4 -> max speedR and it will rich it after secont(number) 45 deg.
+                if(speedR < 0.2){
+                    speedR = 0.2;
+                    robot.setRotationSpeed(-speedR);
+                }
+                else if(speedR >= PI/4.0){
+                    speedR = PI/4.0;
+                    robot.setRotationSpeed(-speedR);
+                }
+                else{
+                    robot.setRotationSpeed(-speedR);
+                }
+                speedDirection = 2;
+                cout << "absolut_angle: " << absolut_angle << endl;
+                cout << "setRotationSpeed: " << (speedR) << endl;
+                cout << "-------------------------" << endl;
+
+            }
+            else if(isRotatingL == true){
+                double absolut_angle = positionDataStruct.fi - positionfi; // absolut_angle is in degrees and speedT is in radians
+                if(absolut_angle < 0){
+                    absolut_angle += 360;
+                }
+                speedR = ((absolut_angle / 45.0) * 45.0) * (PI/180.0); // x = a*(pi/180) degrees into radians. first(number) 45 = pi/4 -> max speedR and it will rich it after secont(number) 45 deg.
+                if(speedR < 0.2){
+                    speedR = 0.2;
+                    robot.setRotationSpeed(speedR);
+                }
+                else if(speedR >= PI/4.0){
+                    speedR = PI/4.0;
+                    robot.setRotationSpeed(speedR);
+                }
+                else{
+                    robot.setRotationSpeed(speedR);
+                }
+                speedDirection = -2;
+                cout << "absolut_angle: " << absolut_angle << endl;
+                cout << "setRotationSpeed: " << (speedR) << endl;
+                cout << "-------------------------" << endl;
+            }
+            else if((isRotatingR == false) && (speedDirection == 2)){
+                double absolut_angle = ((speedR * (180.0/PI)) * 45.0) / 45.0; // absolut_angle is in degrees and speedT is in radians
+                speedR = (((absolut_angle - 1.0) / 45.0) * 45.0) * (PI/180.0);
+                if(speedR <= 0.0){
+                    speedR = 0.0;
+                    robot.setRotationSpeed(-speedR);
+                }
+                else{
+                    robot.setRotationSpeed(-speedR);
+                }
+                cout << "absolut_angle: " << absolut_angle << endl;
+                cout << "setRotationSpeed: " << (speedR) << endl;
+                cout << "-------------------------" << endl;
+            }
+            else if((isRotatingL == false) && (speedDirection == -2)){
+                double absolut_angle = ((speedR * (180.0/PI)) * 45.0) / 45.0; // absolut_angle is in degrees and speedT is in radians
+                speedR = (((absolut_angle - 1.0) / 45.0) * 45.0) * (PI/180.0);
+                if(speedR <= 0.0){
+                    speedR = 0.0;
+                    robot.setRotationSpeed(speedR);
+                }
+                else{
+                    robot.setRotationSpeed(speedR);
+                }
+                cout << "absolut_angle: " << absolut_angle << endl;
+                cout << "setRotationSpeed: " << (speedR) << endl;
+                cout << "-------------------------" << endl;
+            }
+
+//            cout << "speedDirection: " << (speedDirection) << endl;
+            if(speedR == 0.0){
+                speedDirection = 0;
+                positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+                positionY = positionDataStruct.y * 100;
+                positionfi = positionDataStruct.fi; // v stupnoch
+            }
+        }
+}
+
+void MainWindow::executeTask4(){
+//    int polomer_robota = 15;
+    int matica = 0;
+
+    for(int i = 0; i < 240; i++) { // rozsirenie hran stien
+        for(int j = 0; j < 240; j++) {
+            matica = grid[i][j];
+            if(matica == 1){
+                for(int k = 1; k <= 3; k++){ //k=3 lebo 5cm * 3 = 15 cm je polomer robota
+                    for(int m = i - 3; m <= (i + 3); m++){
+                        for(int n = j - 3; n <= (j + 3); n++){
+                            if((m >= 0 && m < 240) && (n >= 0 && n < 240) && (grid[m][n] == 0)) // ak maica necacina od 0 a konci v 239 treva zmenit podmienky
+                                grid[m][n] = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    grid[(int) (xZelana * 100)/5][(int) (yZelana * 100)/5] = 2; // position of finish
+    int startX = (int) (positionDataStruct.x * 100.0)/5.0; // starting position x in cm
+    int startY = (int) (positionDataStruct.y * 100.0)/5.0; // starting position y in cm
+
+
+    for(int k = 2; grid[startX][startY] > 2; k++){ // zaplavovi algoritmus
+
+        for(int i = 0; i < 240; i++) {
+            for(int j = 0; j < 240; j++) {
+                matica = grid[i][j];
+                if(matica == k){
+                    if((i+1 >= 0 && i+1 < 240) && (j >= 0 && j < 240) && grid[i+1][j] == 0)
+                        grid[i+1][j] = k+1;
+
+                    if((i-1 >= 0 && i-1 < 240) && (j >= 0 && j < 240) && grid[i-1][j] == 0)
+                        grid[i-1][j] = k+1;
+
+                    if((i >= 0 && i < 240) && (j+1 >= 0 && j+1 < 240) && grid[i][j+1] == 0)
+                        grid[i][j+1] = k+1;
+
+                    if((i >= 0 && i < 240) && (j-1 >= 0 && j-1 < 240) && grid[i][j-1] == 0)
+                        grid[i][j-1] = k+1;
+                }
+            }
+        }
+    }
+
+    //najst cestu od zaciatku po ciel (mnozina bodov)
+//    for(int controled_position = 0,
+//        path[0][0] = startX,
+//        path[1][0] = startY,
+//        i = startX,
+//        j = startY,
+//        k = 0,
+//        direction = 0;
+//        !(controled_position == 2);
+//        i = path[0][k],
+//        j = path[1][k]) {
+
+//        if((i+1 >= 0 && i+1 < 240) && grid[i+1][j] == (grid[i][j]) - 1){ // dole
+//            if (direction == 1){
+//                path[0][k] = i++;
+//                path[1][k] = j;
+//                direction = 1;
+//            }
+//            else{
+//                path[0][k+1] = i++;
+//                path[1][k+1] = j;
+//                direction = 1;
+//                k++;
+//            }
+
+//            controled_position = grid[i+1][j];
+//        }
+//        else if((j+1 >= 0 && j+1 < 240) && grid[i][j+1] == (grid[i][j]) - 1){ // right
+//            if (direction == 2){
+//                path[0][k] = i;
+//                path[1][k] = j++;
+//                direction = 2;
+//            }
+//            else{
+//                path[0][k+1] = i;
+//                path[1][k+1] = j++;
+//                direction = 2;
+//                k++;
+//            }
+
+//            controled_position = grid[i][j+1];
+//        }
+//        else if((i-1 >= 0 && i-1 < 240) && grid[i-1][j] == (grid[i][j]) - 1){ //up
+//            if (direction == 3){
+//                path[0][k+1] = i--;
+//                path[1][k+1] = j;
+//                direction = 3;
+//            }
+//            else{
+//                path[0][k+1] = i--;
+//                path[1][k+1] = j;
+//                direction = 3;
+//                k++;
+//            }
+
+//            controled_position = grid[i-1][j];
+//        }
+//        else if((j-1 >= 0 && j-1 < 240) && grid[i][j-1] == (grid[i][j]) - 1){ // left
+//            if (direction == 4){
+//                path[0][k+1] = i;
+//                path[1][k+1] = j--;
+//                direction = 4;
+//            }
+//            else{
+//                path[0][k+1] = i;
+//                path[1][k+1] = j--;
+//                direction = 4;
+//                k++;
+//            }
+
+//            controled_position = grid[i][j-1];
+//        }
+//    }
 }
 
 void printGrid(int x, int y) {
@@ -432,49 +678,75 @@ void MainWindow::on_pushButton_2_clicked() //forward
     //pohyb dopredu
 //    robot.setTranslationSpeed(300);
 //    robot.setTranslationSpeed(speedT);
-    ismovingF = true;
-    ismovingB = false;
-    isRotating = false;
+    if(speedDirection == 0){
+        ismovingF = true;
+        ismovingB = false;
+        isRotatingR = false;
+        isRotatingL = false;
+        speedDirection = 1;
+        positionfi = positionDataStruct.fi; // v stupnoch
+    }
+
 }
 
 void MainWindow::on_pushButton_3_clicked() //back
 {
 //    robot.setTranslationSpeed(-250);
 //    robot.setTranslationSpeed(speedT);
-    ismovingF = false;
-    ismovingB = true;
-    isRotating = false;
+    if(speedDirection == 0){
+        ismovingF = false;
+        ismovingB = true;
+        isRotatingR = false;
+        isRotatingL = false;
+        speedDirection = -1;
+        positionfi = positionDataStruct.fi; // v stupnoch
+    }
+
 }
 
 void MainWindow::on_pushButton_6_clicked() //left
 {
-    robot.setRotationSpeed(3.14159/2);
-    ismovingF = false;
-    ismovingB = false;
-    isRotating = true;
-    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
-    positionY = positionDataStruct.y * 100;
+//    robot.setRotationSpeed(3.14159/2);
+    if(speedDirection == 0){
+        ismovingF = false;
+        ismovingB = false;
+        isRotatingR = false;
+        isRotatingL = true;
+        speedDirection = -2;
+        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+        positionY = positionDataStruct.y * 100;
+    }
+
 }
 
 void MainWindow::on_pushButton_5_clicked()//right
 {
-    robot.setRotationSpeed(-3.14159/2);
-    ismovingF = false;
-    ismovingB = false;
-    isRotating = true;
-    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
-    positionY = positionDataStruct.y * 100;
+//    robot.setRotationSpeed(-3.14159/2);
+    if(speedDirection == 0){
+        ismovingF = false;
+        ismovingB = false;
+        isRotatingR = true;
+        isRotatingL = false;
+        speedDirection = 2;
+        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+        positionY = positionDataStruct.y * 100;
+    }
+
 }
 
 void MainWindow::on_pushButton_4_clicked() //stop
 {
-    robot.setTranslationSpeed(0);
+//    robot.setTranslationSpeed(0);
+
     ismovingF = false;
     ismovingB = false;
-//    // true nech nesnima body pri STOP
-    isRotating = true;
+    isRotatingR = false;
+    isRotatingL = false;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
+    positionfi = positionDataStruct.fi; // v stupnoch
+
+
 }
 
 
