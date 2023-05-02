@@ -59,8 +59,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    positionDataStruct.x = 0.5;
-    positionDataStruct.y = 0.5;
+//    positionDataStruct.x = 0.5;
+//    positionDataStruct.y = 0.5;
+    positionDataStruct.x = 6.0;
+    positionDataStruct.y = 6.0;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
     positionDataStruct.fi = 0;
@@ -70,8 +72,8 @@ MainWindow::MainWindow(QWidget *parent) :
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
     //tu je napevno nastavena ip. treba zmenit na to co ste si zadali do text boxu alebo nejaku inu pevnu. co bude spravna
-    ipaddress="127.0.0.1";
-//    ipaddress="192.168.1.13";
+//    ipaddress="127.0.0.1";
+    ipaddress="192.168.1.12";
   //  cap.open("http://192.168.1.11:8000/stream.mjpg");
     ui->setupUi(this);
     datacounter=0;
@@ -166,16 +168,16 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     long double d = 0.23; // vzdialenost medzi kolesami v metroch
     double lengthRight = getTickToMeter(positionDataStruct.previousEncoderRight, robotdata.EncoderRight);
     double lengthLeft = getTickToMeter(positionDataStruct.previousEncoderLeft, robotdata.EncoderLeft);
-    if(lengthRight == lengthLeft) {
+   // if(lengthRight == lengthLeft) {
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
         positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
-        positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_radian);
-        positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_radian);
+        positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_gyro*PI/180.0);
+        positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_gyro*PI/180.0);
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
 
 //        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
 //        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
-    } else {
+   /* } else {
         double previousFi = positionDataStruct.fi_radian;
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
         positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
@@ -184,34 +186,34 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 //        positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
         positionDataStruct.x += ((d*(lengthRight+lengthLeft))/(2.0*(lengthRight-lengthLeft)))*(sin(positionDataStruct.fi_radian)-sin(previousFi));
         positionDataStruct.y -= ((d*(lengthRight+lengthLeft))/(2.0*(lengthRight-lengthLeft)))*(cos(positionDataStruct.fi_radian)-cos(previousFi));
-    }
+    }*/
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
-    if(firstRun == true){
-        mapCreator();
+//    if(firstRun == true){
+//        mapCreator();
 
-        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-        if (myfile.is_open()){
-            myfile << "Here is your map! " << endl;
-            for (int i = 0; i < 240; i++)
-            {
-                myfile << "" << endl;
-                for (int j = 0; j < 240; j++){
-                    myfile << " " << grid[i][j];
-                }
-            }
-            myfile.close();
-        }
-        else cout << "Unable to open file";
+//        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        if (myfile.is_open()){
+//            myfile << "Here is your map! " << endl;
+//            for (int i = 0; i < 240; i++)
+//            {
+//                myfile << "" << endl;
+//                for (int j = 0; j < 240; j++){
+//                    myfile << " " << grid[i][j];
+//                }
+//            }
+//            myfile.close();
+//        }
+//        else cout << "Unable to open file";
 
-        /*
-         * Uloha 4
-         */
-        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
+//        /*
+//         * Uloha 4
+//         */
+//        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
 
-        firstRun = false;
-    }
+//        firstRun = false;
+//    }
     /*
      * Uloha 3
      */
@@ -543,7 +545,7 @@ void MainWindow::executeTask4(){
         }
     }
 
-    ofstream rozsirena("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_poRozsireni.txt");
+    ofstream rozsirena("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_poRozsireni.txt");
     if (rozsirena.is_open()){
         for (int i = 0; i < 240; i++)
         {
@@ -584,7 +586,7 @@ void MainWindow::executeTask4(){
         }
     }
 
-    ofstream mapa("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa.txt");
+    ofstream mapa("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa.txt");
     if (mapa.is_open()){
         for (int i = 0; i < 240; i++)
         {
@@ -666,7 +668,7 @@ void MainWindow::executeTask4(){
         }
     }
 
- ofstream trasa("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/Trasa.txt");
+ ofstream trasa("/home/pocitac3/Documents/RMR_Uloha_1/Trasa.txt");
  if (trasa.is_open()){
      for (int i = 0; i < 2; i++)
      {
@@ -849,8 +851,8 @@ void MainWindow::on_pushButton_6_clicked() //left
         speedDirection = -2;
         positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
         positionY = positionDataStruct.y * 100;
+        speedT = 0;
     }
-
 }
 
 void MainWindow::on_pushButton_5_clicked()//right
@@ -865,6 +867,7 @@ void MainWindow::on_pushButton_5_clicked()//right
         speedDirection = 2;
         positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
         positionY = positionDataStruct.y * 100;
+        speedT = 0;
     }
 
 }
