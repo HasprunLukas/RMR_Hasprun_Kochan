@@ -245,6 +245,8 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 
     double wantedX = (points[0][currPoint]*5)/100.0;
     double wantedY = (points[1][currPoint]*5)/100.0;
+    cout << "xZelana : " << wantedX << endl;
+    cout << "yZelana : " << wantedY << endl;
     if(canContinue) {
         executeTask1(wantedX, wantedY);
         if(isCorrectPosition) {
@@ -252,6 +254,8 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
             if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
                 wantedX = (points[0][currPoint]*5)/100.0;
                 wantedY = (points[1][currPoint]*5)/100.0;
+                cout << "xZelana : " << wantedX << endl;
+                cout << "yZelana : " << wantedY << endl;
                 isCorrectPosition = false;
                 isCorrectAngle = false;
             } else {
@@ -290,8 +294,8 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 }
 
 void MainWindow::executeTask1(double xZelana, double yZelana) {
-    cout << "xZelana : " << xZelana << endl;
-    cout << "yZelana : " << yZelana << endl;
+//    cout << "xZelana : " << xZelana << endl;
+//    cout << "yZelana : " << yZelana << endl;
     cout << "xaktualna : " << positionDataStruct.x << endl;
     cout << "yaktualna : " << positionDataStruct.y << endl;
     double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
