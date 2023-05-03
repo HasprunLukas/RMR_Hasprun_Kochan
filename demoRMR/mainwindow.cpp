@@ -20,8 +20,8 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick);
 void printGrid(int x, int y);
 void printMatrix(int x, int y);
 void mapCreator();
-double xZelana = 5.25;
-double yZelana = 2.30;
+double xZelana = 1.0;//5.25
+double yZelana = 1.0;//2.30
 bool turningLeft = false;
 bool turningRight = false;
 bool isCorrectAngle = false;
@@ -174,7 +174,11 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
    // if(lengthRight == lengthLeft) {
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
 //        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
-        positionDataStruct.fi = (robotdata.GyroAngle/100.0) + 180.0;
+//        positionDataStruct.fi = (robotdata.GyroAngle/100.0) + 180.0;
+        positionDataStruct.fi = (robotdata.GyroAngle/100.0);
+        if((robotdata.GyroAngle/100.0) < 0){
+            positionDataStruct.fi + 360.0;
+        }
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_gyro*PI/180.0);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_gyro*PI/180.0);
 
@@ -242,7 +246,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     double wantedX = (points[0][currPoint]*5)/100.0;
     double wantedY = (points[1][currPoint]*5)/100.0;
     if(canContinue) {
-        executeTask1(wantedX, wantedY);
+        executeTask1(xZelana, yZelana);
         if(isCorrectPosition) {
             currPoint++;
             if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
@@ -288,12 +292,16 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 void MainWindow::executeTask1(double xZelana, double yZelana) {
     cout << "xZelana : " << xZelana << endl;
     cout << "yZelana : " << yZelana << endl;
+    cout << "xaktualna : " << positionDataStruct.x << endl;
+    cout << "yaktualna : " << positionDataStruct.y << endl;
     double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
     if(wanted_angle < 0) {
         wanted_angle += 360;
     }
+    cout << "angle : " << positionDataStruct.fi << endl;
+    cout << "wanted_angle : " << wanted_angle << endl;
     if(!isCorrectAngle) {
-        if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
+        if(abs(wanted_angle - positionDataStruct.fi) < 1.0) {
             robot.setRotationSpeed(0);
             isRotatingR = false;
             isRotatingL = false;
