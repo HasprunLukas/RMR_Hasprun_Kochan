@@ -32,6 +32,7 @@ bool isRotatingL = false;
 bool ismovingF = false;
 bool ismovingB = false;
 bool firstRun = true;
+bool canContinue = true;
 int speedT = 0;
 double speedR = 0;
 int speedDirection = 0;
@@ -41,6 +42,8 @@ double positionfi = 0;
 cv::Mat myGrid(cv::Size(240, 240), CV_64F);
 int grid[240][240] = {{0}};
 int path[2][240] = {{0}};
+double points[2][240] = {{0}};
+int currPoint = 2;
 double mapKoty[53][2] = {{0,0},{574.5,0},{574.5,460.5},{550.5,460.5},{550.5,471.5},{55.5,471.5},{55.5,431.5},{0,431.5},{0,0},//obvod
                   {264.5,0},{264.5,154.5},{267.5,154.5},{267.5,0},//1
                   {264.5,151.5},{264.5,154.5},{110,154.5},{110,151.5},//2
@@ -169,10 +172,17 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     double lengthRight = getTickToMeter(positionDataStruct.previousEncoderRight, robotdata.EncoderRight);
     double lengthLeft = getTickToMeter(positionDataStruct.previousEncoderLeft, robotdata.EncoderLeft);
    // if(lengthRight == lengthLeft) {
-        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
-        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+//        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
+//        positionDataStruct.fi = fmod((positionDataStruct.fi_radian)*(180/PI)+360.0,360.0);
+        positionDataStruct.fi = (robotdata.GyroAngle/100.0) + 180.0;
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_gyro*PI/180.0);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_gyro*PI/180.0);
+
+//        double wanted_angle = (atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI));
+//        if(wanted_angle < 0) {
+//        wanted_angle += 360;
+//        }
+//        cout << "wanted_angle: " << wanted_angle << endl;
 //        positionDataStruct.fi_radian += (lengthRight - lengthLeft) / d;
 
 //        positionDataStruct.fi_radian = (positionDataStruct.fi*PI/180.0);
@@ -190,40 +200,61 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
-    if(firstRun == true){
-        mapCreator();
+//    if(firstRun == true){
+//        mapCreator();
 
-//        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-//        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-        if (myfile.is_open()){
-            myfile << "Here is your map! " << endl;
-            for (int i = 0; i < 240; i++)
-            {
-                myfile << "" << endl;
-                for (int j = 0; j < 240; j++){
-                    myfile << " " << grid[i][j];
-                }
-            }
-            myfile.close();
-        }
-        else cout << "Unable to open file";
+////        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+////        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        ofstream myfile("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        if (myfile.is_open()){
+//            myfile << "Here is your map! " << endl;
+//            for (int i = 0; i < 240; i++)
+//            {
+//                myfile << "" << endl;
+//                for (int j = 0; j < 240; j++){
+//                    myfile << " " << grid[i][j];
+//                }
+//            }
+//            myfile.close();
+//        }
+//        else cout << "Unable to open file";
 
-        /*
-         * Uloha 4
-         */
-        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
+//        /*
+//         * Uloha 4
+//         */
+//        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
 
-        firstRun = false;
-    }
+//        firstRun = false;
+//    }
     /*
      * Uloha 3
      */
-    executeTask3(/*copyOfLaserData*/);
+//    executeTask3(/*copyOfLaserData*/);
     /*
      * Uloha 1
      */
-//    executeTask1();
+//    executeTask1(2.2, 0.45);
+    if(firstRun) {
+        trajectory_run();
+        firstRun = false;
+    }
+
+    double wantedX = (points[0][currPoint]*5)/100.0;
+    double wantedY = (points[1][currPoint]*5)/100.0;
+    if(canContinue) {
+        executeTask1(wantedX, wantedY);
+        if(isCorrectPosition) {
+            currPoint++;
+            if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
+                wantedX = (points[0][currPoint]*5)/100.0;
+                wantedY = (points[1][currPoint]*5)/100.0;
+                isCorrectPosition = false;
+                isCorrectAngle = false;
+            } else {
+                canContinue = false;
+            }
+        }
+    }
 
 
 
@@ -254,12 +285,13 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 
 }
 
-void MainWindow::executeTask1() {
+void MainWindow::executeTask1(double xZelana, double yZelana) {
+    cout << "xZelana : " << xZelana << endl;
+    cout << "yZelana : " << yZelana << endl;
     double wanted_angle = atan2((yZelana - positionDataStruct.y),(xZelana - positionDataStruct.x))*(180/PI);
     if(wanted_angle < 0) {
         wanted_angle += 360;
     }
-//    cout << "wanted_angle: " << wanted_angle << endl;
     if(!isCorrectAngle) {
         if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
             robot.setRotationSpeed(0);
@@ -268,6 +300,7 @@ void MainWindow::executeTask1() {
             isCorrectAngle = true;
         } else {
             double rotation_speed = 3.14159/4;
+            cout << "abs(wanted_angle - positionDataStruct.fi) : " << abs(wanted_angle - positionDataStruct.fi) << endl;
             if(abs(wanted_angle - positionDataStruct.fi) <= 30) {
                 rotation_speed = (abs(wanted_angle - positionDataStruct.fi)*(PI/180)) * ((67.5*(PI/180))/(3.14159/4)); //((67.5*(PI/180))/(3.14159/4))=1.5
             }
@@ -291,7 +324,7 @@ void MainWindow::executeTask1() {
                 isRotatingR = false;
                 isRotatingL = false;
             }
-            else if((wanted_angle - positionDataStruct.fi) < -180.0){
+            else if((wanted_angle - positionDataStruct.fi) <= -180.0){
                 robot.setRotationSpeed(rotation_speed); //turn left
                 isRotatingR = false;
                 isRotatingL = false;
@@ -331,6 +364,64 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick) {
         res = (long double)(tick+65536)- (long double)previousTick;
     }
     return tickToMeter * res;
+}
+
+void MainWindow::trajectory_run() {
+    fstream trasa;
+    trasa.open("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/Trasa.txt");
+    if(trasa.is_open()) {
+        string sa;
+        int j = 0;
+        while (getline(trasa, sa)) {
+            // Print the data of the string.
+            if(sa.size() > 0) {
+                string delimiter = " ";
+                size_t pos = 0;
+                string token;
+                int i = 0;
+                while ((pos = sa.find(delimiter)) != string::npos) {
+                    token = sa.substr(0, pos);
+                    if(i > 0) {
+//                        cout << "token " << i+1 << " : " << token << endl;
+//                        cout << "j : " << j << ", i : " << i << endl;
+                        points[j][i] = stod(token);
+                    }
+                    sa.erase(0, pos + delimiter.length());
+                    i++;
+                }
+                j++;
+            }
+//            cout << "SIZE : " << sa.size() << endl;
+//            cout << sa << "\n";
+        }
+    }
+    trasa.close();
+    cout << "path arr created" << endl;
+
+//    for(int j = 0; j < 2; j++) {
+//        for(int i = 0; i < 240; i++) {
+//            cout << points[j][i] << " ";
+//        }
+//        cout << endl;
+//    }
+
+//    for(int i = 0; i < 240; i++) {
+//        if(points[0][i] != 0 && points[1][i] != 0) {
+//            cout << "ExecuteTask1(x=" << (points[0][i]*5)/100.0 << ", y=" << (points[1][i]*5)/100.0 << ");" << endl;
+//        }
+//    }
+
+//    ofstream rozsirena("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_poRozsireni.txt");
+//    if (rozsirena.is_open()){
+//        for (int i = 0; i < 240; i++)
+//        {
+//            rozsirena << "" << endl;
+//            for (int j = 0; j < 240; j++){
+//                rozsirena << " " << grid[i][j];
+//            }
+//        }
+//        rozsirena.close();
+//    }
 }
 
 void MainWindow::executeTask3(/*LaserMeasurement copyOfLaserData*/) {
@@ -547,7 +638,7 @@ void MainWindow::executeTask4(){
         }
     }
 
-    ofstream rozsirena("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_poRozsireni.txt");
+    ofstream rozsirena("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_poRozsireni.txt");
     if (rozsirena.is_open()){
         for (int i = 0; i < 240; i++)
         {
@@ -588,7 +679,7 @@ void MainWindow::executeTask4(){
         }
     }
 
-    ofstream mapa("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa.txt");
+    ofstream mapa("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa.txt");
     if (mapa.is_open()){
         for (int i = 0; i < 240; i++)
         {
@@ -670,7 +761,7 @@ void MainWindow::executeTask4(){
         }
     }
 
- ofstream trasa("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/Trasa.txt");
+ ofstream trasa("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/Trasa.txt");
  if (trasa.is_open()){
      for (int i = 0; i < 2; i++)
      {
@@ -824,78 +915,78 @@ void MainWindow::on_pushButton_9_clicked() //start button
 void MainWindow::on_pushButton_2_clicked() //forward
 {
     //pohyb dopredu
-//    robot.setTranslationSpeed(300);
+    robot.setTranslationSpeed(300);
 //    robot.setTranslationSpeed(speedT);
-    if(speedDirection == 0){
-        ismovingF = true;
-        ismovingB = false;
-        isRotatingR = false;
-        isRotatingL = false;
-        speedDirection = 1;
-        positionfi = positionDataStruct.fi; // v stupnoch
-    }
+//    if(speedDirection == 0){
+//        ismovingF = true;
+//        ismovingB = false;
+//        isRotatingR = false;
+//        isRotatingL = false;
+//        speedDirection = 1;
+//        positionfi = positionDataStruct.fi; // v stupnoch
+//    }
 
 }
 
 void MainWindow::on_pushButton_3_clicked() //back
 {
-//    robot.setTranslationSpeed(-250);
+    robot.setTranslationSpeed(-250);
 //    robot.setTranslationSpeed(speedT);
-    if(speedDirection == 0){
-        ismovingF = false;
-        ismovingB = true;
-        isRotatingR = false;
-        isRotatingL = false;
-        speedDirection = -1;
-        positionfi = positionDataStruct.fi; // v stupnoch
-    }
+//    if(speedDirection == 0){
+//        ismovingF = false;
+//        ismovingB = true;
+//        isRotatingR = false;
+//        isRotatingL = false;
+//        speedDirection = -1;
+//        positionfi = positionDataStruct.fi; // v stupnoch
+//    }
 
 }
 
 void MainWindow::on_pushButton_6_clicked() //left
 {
-//    robot.setRotationSpeed(3.14159/2);
-    if(speedDirection == 0){
-      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
-        ismovingF = false;
-        ismovingB = false;
-        isRotatingR = false;
-        isRotatingL = true;
-        speedDirection = -2;
-        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
-        positionY = positionDataStruct.y * 100;
-        speedT = 0;
-    }
+    robot.setRotationSpeed(3.14159/2);
+//    if(speedDirection == 0){
+//      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
+//        ismovingF = false;
+//        ismovingB = false;
+//        isRotatingR = false;
+//        isRotatingL = true;
+//        speedDirection = -2;
+//        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+//        positionY = positionDataStruct.y * 100;
+//        speedT = 0;
+//    }
 }
 
 void MainWindow::on_pushButton_5_clicked()//right
 {
-//    robot.setRotationSpeed(-3.14159/2);
-    if(speedDirection == 0){
-      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
-        ismovingF = false;
-        ismovingB = false;
-        isRotatingR = true;
-        isRotatingL = false;
-        speedDirection = 2;
-        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
-        positionY = positionDataStruct.y * 100;
-        speedT = 0;
-    }
+    robot.setRotationSpeed(-3.14159/2);
+//    if(speedDirection == 0){
+//      //  positionDataStruct.fi = ((robotdata.GyroAngle/100.0)+180.0);
+//        ismovingF = false;
+//        ismovingB = false;
+//        isRotatingR = true;
+//        isRotatingL = false;
+//        speedDirection = 2;
+//        positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+//        positionY = positionDataStruct.y * 100;
+//        speedT = 0;
+//    }
 
 }
 
 void MainWindow::on_pushButton_4_clicked() //stop
 {
-//    robot.setTranslationSpeed(0);
+    robot.setTranslationSpeed(0);
 
-    ismovingF = false;
-    ismovingB = false;
-    isRotatingR = false;
-    isRotatingL = false;
-    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
-    positionY = positionDataStruct.y * 100;
-    positionfi = positionDataStruct.fi; // v stupnoch
+//    ismovingF = false;
+//    ismovingB = false;
+//    isRotatingR = false;
+//    isRotatingL = false;
+//    positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
+//    positionY = positionDataStruct.y * 100;
+//    positionfi = positionDataStruct.fi; // v stupnoch
 
 
 }
