@@ -246,7 +246,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     double wantedX = (points[0][currPoint]*5)/100.0;
     double wantedY = (points[1][currPoint]*5)/100.0;
     if(canContinue) {
-        executeTask1(xZelana, yZelana);
+        executeTask1(wantedX, wantedY);
         if(isCorrectPosition) {
             currPoint++;
             if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
