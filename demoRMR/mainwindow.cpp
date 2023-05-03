@@ -20,8 +20,8 @@ double getTickToMeter(unsigned short previousTick, unsigned short tick);
 void printGrid(int x, int y);
 void printMatrix(int x, int y);
 void mapCreator();
-double xZelana = 1.0;//5.25
-double yZelana = 1.0;//2.30
+double xZelana = 5.25;//5.25
+double yZelana = 2.30;//2.30
 bool turningLeft = false;
 bool turningRight = false;
 bool isCorrectAngle = false;
@@ -177,7 +177,7 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 //        positionDataStruct.fi = (robotdata.GyroAngle/100.0) + 180.0;
         positionDataStruct.fi = (robotdata.GyroAngle/100.0);
         if((robotdata.GyroAngle/100.0) < 0){
-            positionDataStruct.fi + 360.0;
+            positionDataStruct.fi = positionDataStruct.fi + 360.0;
         }
         positionDataStruct.x += ((lengthRight + lengthLeft)/2) * cos(positionDataStruct.fi_gyro*PI/180.0);
         positionDataStruct.y += ((lengthRight + lengthLeft)/2) * sin(positionDataStruct.fi_gyro*PI/180.0);
@@ -343,7 +343,7 @@ void MainWindow::executeTask1(double xZelana, double yZelana) {
             isCorrectPosition = true;
             robot.setTranslationSpeed(0);
         } else if((xZelana + yZelana + 0.3) > (positionDataStruct.x + positionDataStruct.y) && (positionDataStruct.x + positionDataStruct.y) > (xZelana + yZelana - 0.3)){
-            if(abs(wanted_angle - positionDataStruct.fi) < 2.0) {
+            if(abs(wanted_angle - positionDataStruct.fi) < 1.0) {
                 // prerobit na euklidovsku vzdialenost
 
                 double speed = sqrt(pow((xZelana + yZelana), 2)+pow((positionDataStruct.x + positionDataStruct.y), 2)) * 1000; // priklad => 0.3*1000 = 300
@@ -355,7 +355,7 @@ void MainWindow::executeTask1(double xZelana, double yZelana) {
             } else {
                 isCorrectAngle = false;
             }
-        } else if(abs(wanted_angle - positionDataStruct.fi) > 2.0){
+        } else if(abs(wanted_angle - positionDataStruct.fi) > 1.0){
             isCorrectAngle = false;
         }else {
             robot.setTranslationSpeed(300);
