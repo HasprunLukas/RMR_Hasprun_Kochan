@@ -354,6 +354,8 @@ void MainWindow::executeTask1(double xZelana, double yZelana) {
 //                double speed = abs((xZelana + yZelana) - (positionDataStruct.x + positionDataStruct.y)) * 1000; // priklad => 0.3*1000 = 300
                 if(speed < 50) {
                     speed = 50;
+                } else if(speed > 200) {
+                    speed = 200;
                 }
                 robot.setTranslationSpeed(speed);
             } else {
@@ -362,7 +364,7 @@ void MainWindow::executeTask1(double xZelana, double yZelana) {
         } else if(abs(wanted_angle - positionDataStruct.fi) > 1.0){
             isCorrectAngle = false;
         }else {
-            robot.setTranslationSpeed(300);
+            robot.setTranslationSpeed(200);
         }
     }
 }
