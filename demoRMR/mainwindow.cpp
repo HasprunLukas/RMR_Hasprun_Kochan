@@ -204,32 +204,32 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
-//    if(firstRun == true){
-//        mapCreator();
+    if(firstRun == true){
+        mapCreator();
 
-////        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-////        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-//        ofstream myfile("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-//        if (myfile.is_open()){
-//            myfile << "Here is your map! " << endl;
-//            for (int i = 0; i < 240; i++)
-//            {
-//                myfile << "" << endl;
-//                for (int j = 0; j < 240; j++){
-//                    myfile << " " << grid[i][j];
-//                }
-//            }
-//            myfile.close();
-//        }
-//        else cout << "Unable to open file";
+//        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+        ofstream myfile("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+        if (myfile.is_open()){
+            myfile << "Here is your map! " << endl;
+            for (int i = 0; i < 240; i++)
+            {
+                myfile << "" << endl;
+                for (int j = 0; j < 240; j++){
+                    myfile << " " << grid[i][j];
+                }
+            }
+            myfile.close();
+        }
+        else cout << "Unable to open file";
 
-//        /*
-//         * Uloha 4
-//         */
-//        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
-
-//        firstRun = false;
-//    }
+        /*
+         * Uloha 4
+         */
+        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
+        trajectory_run();
+        firstRun = false;
+    }
     /*
      * Uloha 3
      */
@@ -238,10 +238,10 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
      * Uloha 1
      */
 //    executeTask1(2.2, 0.45);
-    if(firstRun) {
-        trajectory_run();
-        firstRun = false;
-    }
+//    if(firstRun) {
+//        trajectory_run();
+//        firstRun = false;
+//    }
 
     double wantedX = (points[0][currPoint]*5)/100.0;
     double wantedY = (points[1][currPoint]*5)/100.0;
@@ -625,9 +625,9 @@ void MainWindow::executeTask4(){
         for(int j = 0; j < 240; j++) {
             matica = grid[i][j];
             if(matica == 1){
-                for(int k = 1; k <= 3; k++){ //k=3 lebo 5cm * 3 = 15 cm je polomer robota
-                    for(int m = i - 3; m <= (i + 3); m++){
-                        for(int n = j - 3; n <= (j + 3); n++){
+                for(int k = 1; k <= 5; k++){ //k=3 lebo 5cm * 3 = 15 cm je polomer robota
+                    for(int m = i - 5; m <= (i + 5); m++){
+                        for(int n = j - 5; n <= (j + 5); n++){
                             if((m >= 0 && m < 240) && (n >= 0 && n < 240) && (grid[m][n] == 0)) // ak maica necacina od 0 a konci v 239 treva zmenit podmienky
                                 grid[m][n] = 3;
                         }
