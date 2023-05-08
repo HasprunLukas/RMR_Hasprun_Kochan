@@ -62,15 +62,15 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    positionDataStruct.x = 0.5;
-    positionDataStruct.y = 0.5;
-//    positionDataStruct.x = 6.0;
-//    positionDataStruct.y = 6.0;
+//    positionDataStruct.x = 0.5;
+//    positionDataStruct.y = 0.5;
+    positionDataStruct.x = 6.0;
+    positionDataStruct.y = 6.0;
     positionX = positionDataStruct.x * 100; // to  * 100 is to transform m into cm
     positionY = positionDataStruct.y * 100;
     positionDataStruct.fi = 0;
     positionDataStruct.fi_radian = 0;
-    printMatrix(240, 240);
+//    printMatrix(240, 240);
 //    positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
 //    positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
@@ -243,26 +243,26 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
 //        firstRun = false;
 //    }
 
-    double wantedX = (points[0][currPoint]*5)/100.0;
-    double wantedY = (points[1][currPoint]*5)/100.0;
-    cout << "xZelana : " << wantedX << endl;
-    cout << "yZelana : " << wantedY << endl;
-    if(canContinue) {
-        executeTask1(wantedX, wantedY);
-        if(isCorrectPosition) {
-            currPoint++;
-            if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
-                wantedX = (points[0][currPoint]*5)/100.0;
-                wantedY = (points[1][currPoint]*5)/100.0;
-                cout << "xZelana : " << wantedX << endl;
-                cout << "yZelana : " << wantedY << endl;
-                isCorrectPosition = false;
-                isCorrectAngle = false;
-            } else {
-                canContinue = false;
-            }
-        }
-    }
+//    double wantedX = (points[0][currPoint]*5)/100.0;
+//    double wantedY = (points[1][currPoint]*5)/100.0;
+//    cout << "xZelana : " << wantedX << endl;
+//    cout << "yZelana : " << wantedY << endl;
+//    if(canContinue) {
+//        executeTask1(wantedX, wantedY);
+//        if(isCorrectPosition) {
+//            currPoint++;
+//            if(points[0][currPoint] != 0 && points[1][currPoint] != 0) {
+//                wantedX = (points[0][currPoint]*5)/100.0;
+//                wantedY = (points[1][currPoint]*5)/100.0;
+//                cout << "xZelana : " << wantedX << endl;
+//                cout << "yZelana : " << wantedY << endl;
+//                isCorrectPosition = false;
+//                isCorrectAngle = false;
+//            } else {
+//                canContinue = false;
+//            }
+//        }
+//    }
 
 
 
@@ -436,6 +436,49 @@ void MainWindow::trajectory_run() {
 //        }
 //        rozsirena.close();
 //    }
+}
+
+void MainWindow::executeTask2(LaserMeasurement copyOfLaserData) {
+    double previousXg = NAN, previousYg = NAN;
+    bool alreadySetEdge = false;
+    for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+    {
+        if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+        double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+        double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+        if(k == 0) {
+            if(copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 > 3 || copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 < 0.71)) continue;
+            previousXg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanAngle)*PI/180.0)));
+            previousYg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanAngle)*PI/180.0)));
+        }
+
+        double distBetweenPoints = sqrt(pow((xg-previousXg), 2) + pow((yg-previousYg), 2));
+
+        if(distBetweenPoints < 15.0) {
+            alreadySetEdge = false;
+            cout << "sqrt(pow((" << xg << "-" << previousXg << "), 2) + pow((" << yg << "-" << previousYg << "), 2))=" << distBetweenPoints << endl;
+            //            myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
+            cout << "Iteration " << k+1 << ", Distance between points (xg,yg)=" << xg << "," << yg << " and (previousXg,previousYg)=" << previousXg << "," << previousYg << " is " << distBetweenPoints << endl;
+            myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 120;
+        } else if(distBetweenPoints >= 10 && !alreadySetEdge) {
+            alreadySetEdge = true;
+            myGrid.at<double>((int) (previousYg/5.0), (int) (previousXg/5.0)) = 255;
+            myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
+        }
+
+        if(k > 0) {
+            previousXg = xg;
+            previousYg = yg;
+        }
+
+        //            if(k == 0) {
+        //                cout<<"xg = " << xg << endl;
+        //                cout<<"yg = " << yg << endl;
+        //            }
+//        grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+//        myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+//        cout << "Coordinates for point " << k+1 << " -> xg : " << xg << ", yg : " << yg << endl;
+    }
 }
 
 void MainWindow::executeTask3(/*LaserMeasurement copyOfLaserData*/) {
@@ -858,21 +901,22 @@ int MainWindow::processThisLidar(LaserMeasurement laserData)
 
     memcpy( &copyOfLaserData,&laserData,sizeof(LaserMeasurement));
     //tu mozete robit s datami z lidaru.. napriklad najst prekazky, zapisat do mapy. naplanovat ako sa prekazke vyhnut.
-    if(speedT >= 50 && speedT <= 200) {
-        for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
-        {
-            if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
-            double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
-            double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
-//            if(k == 0) {
-//                cout<<"xg = " << xg << endl;
-//                cout<<"yg = " << yg << endl;
-//            }
-            grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
-            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
-        }
-    }
-    cv::imwrite("/home/pocitac3/Documents/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//    if(speedT >= 50 && speedT <= 200) {
+//        for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+//        {
+//            if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+//            double xg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[k].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+//            double yg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[k].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[k].scanAngle)*PI/180.0)));
+////            if(k == 0) {
+////                cout<<"xg = " << xg << endl;
+////                cout<<"yg = " << yg << endl;
+////            }
+//            grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+//            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+//        }
+//    }
+    executeTask2(copyOfLaserData);
+    cv::imwrite("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
     // ale nic vypoctovo narocne - to iste vlakno ktore cita data z lidaru
     updateLaserPicture=1;
     update();//tento prikaz prinuti prekreslit obrazovku.. zavola sa paintEvent funkcia

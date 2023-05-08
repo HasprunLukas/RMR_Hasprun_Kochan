@@ -83,6 +83,7 @@ private slots:
 
 private:
     void executeTask1(double xZelana, double yZelana);
+    void executeTask2(LaserMeasurement copyOfLaserData);
     void executeTask3(/*LaserMeasurement copyOfLaserData*/);
     void executeTask4();
     void trajectory_run();
