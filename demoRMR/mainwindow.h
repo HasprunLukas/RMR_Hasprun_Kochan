@@ -86,7 +86,9 @@ private:
     void executeTask2();
     void executeTask3(/*LaserMeasurement copyOfLaserData*/);
     void executeTask4();
+    double wallDetection();
     void calculateObstacleEdges();
+    void rotateBesideObstacle(double rangeFromWall);
     void trajectory_run();
     //--skuste tu nic nevymazat... pridavajte co chcete, ale pri odoberani by sa mohol stat nejaky drobny problem, co bude vyhadzovat chyby
     Ui::MainWindow *ui;

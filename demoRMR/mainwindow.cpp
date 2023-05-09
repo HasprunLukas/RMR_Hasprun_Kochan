@@ -440,7 +440,79 @@ void MainWindow::trajectory_run() {
 
 void MainWindow::executeTask2() {
     // look at file /RMR_Uloha_1/imageeeeeeeee.png, darker point is obstacle, brighter point is obstacle edge
-    calculateObstacleEdges();
+//    calculateObstacleEdges();
+    double rangeFromWall = wallDetection();
+    cout << "fi : " << positionDataStruct.fi << endl;
+    cout << "rangeFromWall : " << rangeFromWall;
+    if (rangeFromWall != -1 ){//&& rangeFromWall < 37.0
+        cout << "rangeFromWall : " << rangeFromWall << endl;
+        rotateBesideObstacle(rangeFromWall);
+        cout << "SOM TU" << endl;
+    }
+    else{
+        robot.setTranslationSpeed(200);
+    }
+}
+
+void MainWindow::rotateBesideObstacle(double rangeFromWall) {
+    cout << "START" << endl;
+    int numOfScans = 0;
+    double sum = 0;
+    double average = 0;
+    double maxRange = rangeFromWall + 0.5;
+    double minRange = rangeFromWall - 0.5;
+//    double maxRange = 37.0;
+//    double maxRange = 35.0;
+//    double maxRangeFromWall = 10000.0;
+    for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++){
+        if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+        if((360.0-copyOfLaserData.Data[k].scanAngle) < 273.0 && (360.0-copyOfLaserData.Data[k].scanAngle) >= 267.0){//pravo
+            cout << "Iteration " << numOfScans << " : " << copyOfLaserData.Data[k].scanDistance/10.0 << endl;
+            robot.setRotationSpeed(PI/4);
+            sum += (copyOfLaserData.Data[k].scanDistance/10.0);
+            average = sum/++numOfScans;
+            cout << "rangeFromWall : " << rangeFromWall << endl;
+//            cout << "maxRangeFromWall : " << maxRangeFromWall << endl;
+//            if(copyOfLaserData.Data[k].scanDistance/10.0 > maxRangeFromWall) {
+//                robot.setRotationSpeed(0);
+//                return;
+//            } else {
+//                maxRangeFromWall = copyOfLaserData.Data[k].scanDistance/10.0;
+//            }
+        }
+    }
+
+    if(average >= minRange && average <= maxRange) {
+        robot.setRotationSpeed(0);
+        cout << "KONIEC" << endl;
+        return;
+    }
+}
+
+double MainWindow::wallDetection(){
+    double b = 40.0;
+//    for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++){
+////        if(copyOfLaserData.Data[0].scanDistance/10.0) {
+////            cout << "RANGE : " << copyOfLaserData.Data[k].scanDistance/10.0 << endl;
+////        }
+//        if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
+//        if(copyOfLaserData.Data[k].scanAngle < (positionDataStruct.fi + 10) && copyOfLaserData.Data[k].scanAngle > (positionDataStruct.fi - 10) && copyOfLaserData.Data[k].scanDistance/10.0 < 37.0){
+////        if((copyOfLaserData.Data[k].scanAngle < (10) || copyOfLaserData.Data[k].scanAngle > (350)) && copyOfLaserData.Data[k].scanDistance/10.0 < 37.0){
+//            Dcrit = b / sin(copyOfLaserData.Data[k].scanAngle);
+//            cout << "Dcrit : " << Dcrit << endl;
+//            cout << "Distance : " << copyOfLaserData.Data[k].scanDistance/10.0 << endl;
+//            if(Dcrit >= copyOfLaserData.Data[k].scanDistance/10.0){
+//                cout << "HMMM data : " << copyOfLaserData.Data[k].scanDistance/10.0 << endl;
+//                return copyOfLaserData.Data[k].scanDistance/10.0;
+//            }
+//        }
+//    }
+//    cout << "TAK NIC" << endl;
+    double Dcrit = b / sin(copyOfLaserData.Data[0].scanAngle);
+    if(Dcrit >= copyOfLaserData.Data[0].scanDistance/10.0) {
+        return copyOfLaserData.Data[0].scanDistance/10.0;
+    }
+    return -1;
 }
 
 void MainWindow::calculateObstacleEdges() {
@@ -489,7 +561,7 @@ void MainWindow::calculateObstacleEdges() {
         //            }
         //        grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
         //        myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
-        //        cout << "Coordinates for point " << k+1 << " -> xg : " << xg << ", yg : " << yg << endl;
+        //        cout << "Coordinates for point " << k+1 << " -> xg : " << xg << ", yg : " << yg << endl;        
     }
 }
 
@@ -928,7 +1000,10 @@ int MainWindow::processThisLidar(LaserMeasurement laserData)
 //        }
 //    }
     executeTask2();
-    cv::imwrite("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//    cv::imwrite("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
+//    myGrid(cv::Size(240, 240), CV_64F);
+//    myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
+    myGrid.setTo(0);
     // ale nic vypoctovo narocne - to iste vlakno ktore cita data z lidaru
     updateLaserPicture=1;
     update();//tento prikaz prinuti prekreslit obrazovku.. zavola sa paintEvent funkcia
