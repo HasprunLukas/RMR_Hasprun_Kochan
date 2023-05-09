@@ -204,32 +204,32 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
     positionDataStruct.previousEncoderLeft = robotdata.EncoderLeft;
     positionDataStruct.previousEncoderRight = robotdata.EncoderRight;
 
-    if(firstRun == true){
-        mapCreator();
+//    if(firstRun == true){
+//        mapCreator();
 
-//        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-//        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-        ofstream myfile("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
-        if (myfile.is_open()){
-            myfile << "Here is your map! " << endl;
-            for (int i = 0; i < 240; i++)
-            {
-                myfile << "" << endl;
-                for (int j = 0; j < 240; j++){
-                    myfile << " " << grid[i][j];
-                }
-            }
-            myfile.close();
-        }
-        else cout << "Unable to open file";
+////        ofstream myfile("/home/pocitac3/Documents/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+////        ofstream myfile("C:/Users/Lenovo/OneDrive/Dokumenty/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        ofstream myfile("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/PerfeknaMapa_predRozsirenimStien.txt");
+//        if (myfile.is_open()){
+//            myfile << "Here is your map! " << endl;
+//            for (int i = 0; i < 240; i++)
+//            {
+//                myfile << "" << endl;
+//                for (int j = 0; j < 240; j++){
+//                    myfile << " " << grid[i][j];
+//                }
+//            }
+//            myfile.close();
+//        }
+//        else cout << "Unable to open file";
 
-        /*
-         * Uloha 4
-         */
-        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
-        trajectory_run();
-        firstRun = false;
-    }
+//        /*
+//         * Uloha 4
+//         */
+//        executeTask4(); //tato uloha bi sa mala spustit len raz na zaciatku celeho procesu a potom uz len pracovat s maticou suradnic trasi ktoru vytvorila, ak bi sa spustila znou trasa a aj zaplavovy algoritmus bi sa prepisali v zmisle aktualnej pozicie robota ako startovacia pozicia.
+//        trajectory_run();
+//        firstRun = false;
+//    }
     /*
      * Uloha 3
      */
@@ -438,9 +438,14 @@ void MainWindow::trajectory_run() {
 //    }
 }
 
-void MainWindow::executeTask2(LaserMeasurement copyOfLaserData) {
-    double previousXg = NAN, previousYg = NAN;
-    bool alreadySetEdge = false;
+void MainWindow::executeTask2() {
+    // look at file /RMR_Uloha_1/imageeeeeeeee.png, darker point is obstacle, brighter point is obstacle edge
+    calculateObstacleEdges();
+}
+
+void MainWindow::calculateObstacleEdges() {
+    double previousXg = NAN, previousYg = NAN, firstXg = NAN, firstYg = NAN;
+    double threshold = 20.0;
     for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
     {
         if(copyOfLaserData.Data[k].scanDistance/1000.0 > 3 || copyOfLaserData.Data[k].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[k].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[k].scanDistance/1000.0 < 0.71)) continue;
@@ -450,34 +455,41 @@ void MainWindow::executeTask2(LaserMeasurement copyOfLaserData) {
             if(copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 > 3 || copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 < 0.3 || (copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 > 0.63 && copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0 < 0.71)) continue;
             previousXg = 100*(positionDataStruct.x + ((copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0)*cos((positionDataStruct.fi_gyro -copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanAngle)*PI/180.0)));
             previousYg = 100*(positionDataStruct.y + ((copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanDistance/1000.0)*sin((positionDataStruct.fi_gyro-copyOfLaserData.Data[copyOfLaserData.numberOfScans-1].scanAngle)*PI/180.0)));
+            firstXg = xg;
+            firstYg = yg;
         }
 
         double distBetweenPoints = sqrt(pow((xg-previousXg), 2) + pow((yg-previousYg), 2));
 
-        if(distBetweenPoints < 15.0) {
-            alreadySetEdge = false;
+        if(distBetweenPoints <= threshold) {
             cout << "sqrt(pow((" << xg << "-" << previousXg << "), 2) + pow((" << yg << "-" << previousYg << "), 2))=" << distBetweenPoints << endl;
             //            myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
             cout << "Iteration " << k+1 << ", Distance between points (xg,yg)=" << xg << "," << yg << " and (previousXg,previousYg)=" << previousXg << "," << previousYg << " is " << distBetweenPoints << endl;
             myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 120;
-        } else if(distBetweenPoints >= 10 && !alreadySetEdge) {
-            alreadySetEdge = true;
+        } else if(distBetweenPoints > threshold) {
             myGrid.at<double>((int) (previousYg/5.0), (int) (previousXg/5.0)) = 255;
             myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
+        }
+
+        if(k == copyOfLaserData.numberOfScans - 1) {
+            distBetweenPoints = sqrt(pow((xg-firstXg), 2) + pow((yg-firstYg), 2));
+            if(distBetweenPoints > threshold) {
+                myGrid.at<double>((int) (yg/5.0), (int) (xg/5.0)) = 255;
+                myGrid.at<double>((int) (firstYg/5.0), (int) (firstXg/5.0)) = 255;
+            }
         }
 
         if(k > 0) {
             previousXg = xg;
             previousYg = yg;
         }
-
         //            if(k == 0) {
         //                cout<<"xg = " << xg << endl;
         //                cout<<"yg = " << yg << endl;
         //            }
-//        grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
-//        myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
-//        cout << "Coordinates for point " << k+1 << " -> xg : " << xg << ", yg : " << yg << endl;
+        //        grid[(int) (yg/5.0)][(int) (xg/5.0)] = 1;
+        //        myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
+        //        cout << "Coordinates for point " << k+1 << " -> xg : " << xg << ", yg : " << yg << endl;
     }
 }
 
@@ -915,7 +927,7 @@ int MainWindow::processThisLidar(LaserMeasurement laserData)
 //            myGrid.at<double>((int) (yg/5.0),(int) (xg/5.0)) = 255;
 //        }
 //    }
-    executeTask2(copyOfLaserData);
+    executeTask2();
     cv::imwrite("C:/Users/haspr/Documents/School/RMR/RMR_Uloha_1/imageeeeeeeee.png", myGrid);
     // ale nic vypoctovo narocne - to iste vlakno ktore cita data z lidaru
     updateLaserPicture=1;

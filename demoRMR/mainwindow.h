@@ -83,9 +83,10 @@ private slots:
 
 private:
     void executeTask1(double xZelana, double yZelana);
-    void executeTask2(LaserMeasurement copyOfLaserData);
+    void executeTask2();
     void executeTask3(/*LaserMeasurement copyOfLaserData*/);
     void executeTask4();
+    void calculateObstacleEdges();
     void trajectory_run();
     //--skuste tu nic nevymazat... pridavajte co chcete, ale pri odoberani by sa mohol stat nejaky drobny problem, co bude vyhadzovat chyby
     Ui::MainWindow *ui;
